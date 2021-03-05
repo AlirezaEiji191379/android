@@ -5,6 +5,7 @@ import android.net.NetworkInfo;
 import android.os.Bundle;
 
 import com.sutporject.crypto.Controller.CoinMarketCapRequestController;
+import com.sutporject.crypto.model.Crypto;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -14,16 +15,20 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.text.method.ScrollingMovementMethod;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.util.ArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
+
+import static android.widget.Toast.LENGTH_LONG;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -32,10 +37,14 @@ public class MainActivity extends AppCompatActivity {
         public void handleMessage(@NonNull Message msg) {
             super.handleMessage(msg);
             TextView textView=(TextView) findViewById(R.id.textView);
-            CharSequence lastText=  textView.getText();
+            CharSequence lastText= textView.getText();
+            textView.setText("");
             textView.setMovementMethod(new ScrollingMovementMethod());
-
-            textView.setText(lastText + "\n \n"+(CharSequence) msg.obj);
+            ArrayList<Crypto>all=(ArrayList<Crypto>)msg.obj;
+            for(int i=0;i<all.size();i++){
+                lastText=lastText+"\n\n"+all.get(i).toString();
+            }
+            textView.setText(lastText);
         }
     };
 
@@ -66,7 +75,7 @@ public class MainActivity extends AppCompatActivity {
         }else{
             status="you are not connected!";
         }
-        Toast.makeText(this,status,Toast.LENGTH_LONG).show();
+        Toast.makeText(this,status, LENGTH_LONG).show();
     }
 
     public void btnClicked(View view){
