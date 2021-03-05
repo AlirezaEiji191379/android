@@ -5,6 +5,7 @@ import android.net.NetworkInfo;
 import android.os.Bundle;
 
 import com.sutporject.crypto.Controller.CoinMarketCapRequestController;
+import com.sutporject.crypto.Controller.DatabaseController;
 import com.sutporject.crypto.model.Crypto;
 
 import androidx.annotation.NonNull;
@@ -48,7 +49,6 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
-    private CoinMarketCapRequestController cmc;
     private ExecutorService executorService;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,9 +56,11 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        cmc=new CoinMarketCapRequestController(1,this,this.handler);
+        CoinMarketCapRequestController.getInstance().setAppCurrentActivity(this);
+        CoinMarketCapRequestController.getInstance().setHandler(this.handler);
+        CoinMarketCapRequestController.getInstance().setIndexOfCoins(1);
         this.executorService= Executors.newCachedThreadPool();
-        this.executorService.execute(cmc);
+        this.executorService.execute(CoinMarketCapRequestController.getInstance());
     }
 
     @Override
@@ -79,8 +81,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void btnClicked(View view){
-        this.cmc.setIndexOfCoins();
-        this.executorService.execute(this.cmc);
+        CoinMarketCapRequestController.getInstance().setIndexOfCoins();
+        this.executorService.execute(CoinMarketCapRequestController.getInstance());
     }
 
     @Override

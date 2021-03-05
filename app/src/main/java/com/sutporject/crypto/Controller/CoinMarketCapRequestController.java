@@ -26,16 +26,21 @@ import okhttp3.Response;
 
 
 public class CoinMarketCapRequestController implements Runnable{
+
+    private static CoinMarketCapRequestController cmc;
     private final String API_KEY="b7338e0c-e7d6-484c-ade8-77c577cb7773";
     private final String url="https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest";
     private final int Limit_Of_Coins=5;
     private int indexOfCoins;
     private  Context appCurrentActivity;
     private android.os.Handler handler;
-    public CoinMarketCapRequestController(int indexOfCoins , Context appCurrentActivity , android.os.Handler handler){
-        this.indexOfCoins=indexOfCoins;
-        this.appCurrentActivity=appCurrentActivity;
-        this.handler=handler;
+
+
+    private CoinMarketCapRequestController(){}
+
+    public static CoinMarketCapRequestController getInstance(){
+        if(cmc==null) cmc=new CoinMarketCapRequestController();
+        return cmc;
     }
 
     public boolean checkDeviceConnection(){
@@ -54,7 +59,13 @@ public class CoinMarketCapRequestController implements Runnable{
         this.indexOfCoins=this.indexOfCoins+this.Limit_Of_Coins;
     }
 
+    public void setIndexOfCoins(int indexOfCoins) {
+        this.indexOfCoins = indexOfCoins;
+    }
 
+    public void setHandler(Handler handler) {
+        this.handler = handler;
+    }
 
     private void doGetRequest() throws IOException {
         OkHttpClient httpClient=new OkHttpClient();
