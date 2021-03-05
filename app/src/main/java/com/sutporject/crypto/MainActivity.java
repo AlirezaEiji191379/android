@@ -6,11 +6,18 @@ import android.os.Bundle;
 
 import com.sutporject.crypto.Controller.CoinMarketCapRequestController;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
+import android.text.method.ScrollingMovementMethod;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.concurrent.Executor;
@@ -20,16 +27,29 @@ import java.util.concurrent.ThreadPoolExecutor;
 
 public class MainActivity extends AppCompatActivity {
 
+    Handler handler=new Handler(Looper.getMainLooper()){
+        @Override
+        public void handleMessage(@NonNull Message msg) {
+            super.handleMessage(msg);
+            TextView textView=(TextView) findViewById(R.id.textView);
+            CharSequence lastText=  textView.getText();
+            textView.setMovementMethod(new ScrollingMovementMethod());
+
+            textView.setText(lastText + "\n \n"+(CharSequence) msg.obj);
+        }
+    };
+
     private CoinMarketCapRequestController cmc;
+    private ExecutorService executorService;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        cmc=new CoinMarketCapRequestController(10,this);
-        ExecutorService service= Executors.newCachedThreadPool();
-        service.execute(cmc);
+        cmc=new CoinMarketCapRequestController(1,this,this.handler);
+        this.executorService= Executors.newCachedThreadPool();
+        this.executorService.execute(cmc);
     }
 
     @Override
@@ -47,6 +67,11 @@ public class MainActivity extends AppCompatActivity {
             status="you are not connected!";
         }
         Toast.makeText(this,status,Toast.LENGTH_LONG).show();
+    }
+
+    public void btnClicked(View view){
+        this.cmc.setIndexOfCoins();
+        this.executorService.execute(this.cmc);
     }
 
     @Override
@@ -70,4 +95,8 @@ public class MainActivity extends AppCompatActivity {
 
         return super.onOptionsItemSelected(item);
     }
+
+
+
+
 }
