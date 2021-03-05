@@ -4,8 +4,8 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
 
-import com.sutporject.crypto.Controller.CoinMarketCapRequestController;
-import com.sutporject.crypto.Controller.DatabaseController;
+import com.sutporject.crypto.Controller.ApiRequest;
+import com.sutporject.crypto.Controller.CoinMarketController;
 import com.sutporject.crypto.model.Crypto;
 
 import androidx.annotation.NonNull;
@@ -16,7 +16,6 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.text.method.ScrollingMovementMethod;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -24,10 +23,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
 
 import static android.widget.Toast.LENGTH_LONG;
 
@@ -49,6 +46,7 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
+    private ApiRequest apiRequest;
     private ExecutorService executorService;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,11 +54,12 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        CoinMarketCapRequestController.getInstance().setAppCurrentActivity(this);
-        CoinMarketCapRequestController.getInstance().setHandler(this.handler);
-        CoinMarketCapRequestController.getInstance().setIndexOfCoins(1);
+        apiRequest=new ApiRequest(this.handler,0);
         this.executorService= Executors.newCachedThreadPool();
-        this.executorService.execute(CoinMarketCapRequestController.getInstance());
+        ///
+        CoinMarketController cmc=new CoinMarketController(this,apiRequest);
+        ///
+        this.executorService.execute(cmc);
     }
 
     @Override
@@ -81,8 +80,18 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void btnClicked(View view){
-        CoinMarketCapRequestController.getInstance().setIndexOfCoins();
-        this.executorService.execute(CoinMarketCapRequestController.getInstance());
+        CoinMarketController cmc=new CoinMarketController(this,apiRequest);
+        CoinMarketController cmc1=new CoinMarketController(this,apiRequest);
+        CoinMarketController cmc2=new CoinMarketController(this,apiRequest);
+        CoinMarketController cmc3=new CoinMarketController(this,apiRequest);
+        CoinMarketController cmc4=new CoinMarketController(this,apiRequest);
+        CoinMarketController cmc5=new CoinMarketController(this,apiRequest);
+        this.executorService.execute(cmc);
+        this.executorService.execute(cmc1);
+        this.executorService.execute(cmc2);
+        this.executorService.execute(cmc3);
+        this.executorService.execute(cmc4);
+        this.executorService.execute(cmc5);
     }
 
     @Override
