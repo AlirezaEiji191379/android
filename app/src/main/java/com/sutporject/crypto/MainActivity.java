@@ -30,6 +30,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -38,7 +39,7 @@ import static android.widget.Toast.LENGTH_LONG;
 public class MainActivity extends AppCompatActivity {
 
     private int starIndexOfCoins;
-    private final int limitOfCoins=5;
+    private final int limitOfCoins=3;
     private ApiRequest apiRequest;
     private ExecutorService executorService;
 
@@ -50,10 +51,15 @@ public class MainActivity extends AppCompatActivity {
             CharSequence lastText= textView.getText();
             textView.setText("");
             textView.setMovementMethod(new ScrollingMovementMethod());
-            ArrayList<Crypto>all=(ArrayList<Crypto>)msg.obj;
-            for(int i=0;i<all.size();i++){
-                lastText=lastText+"\n\n"+all.get(i).toString();
+            ArrayList<Object> obj= (ArrayList<Object>) msg.obj;
+            ArrayList<Crypto> allCrypto= (ArrayList<Crypto>) obj.get(0);
+            ArrayList<RequestBuilder> allRbs= (ArrayList<RequestBuilder>) obj.get(1);
+            for(int i=0;i<allCrypto.size();i++){
+                lastText=lastText+"\n\n"+allCrypto.get(i).toString();
             }
+            allRbs.get(0).into((ImageView) findViewById(R.id.imageView));
+            allRbs.get(1).into((ImageView) findViewById(R.id.imageView2));
+            allRbs.get(2).into((ImageView) findViewById(R.id.imageView3));
             textView.setText(lastText);
             findViewById(R.id.viewBtn).setEnabled(true);
         }
@@ -66,10 +72,10 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         this.starIndexOfCoins=1;
-        apiRequest=new ApiRequest(this.handler);
+        apiRequest=new ApiRequest(this.handler,this);
         this.executorService= Executors.newCachedThreadPool();
         ///
-        CoinMarketController cmc=new CoinMarketController(this,apiRequest,this.starIndexOfCoins,this.limitOfCoins);
+        CoinMarketController cmc=new CoinMarketController(this,apiRequest,this.handler,this.starIndexOfCoins,this.limitOfCoins);
         ///
         this.executorService.execute(cmc);
         //executorService.shutdown();
@@ -92,11 +98,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void btnClicked(View view){
-        //if(view.isEnabled()==false) return;
-        //view.setEnabled(false);
+        if(view.isEnabled()==false) return;
+        view.setEnabled(false);
         if(this.executorService.isTerminated()) this.executorService=Executors.newCachedThreadPool();
         this.starIndexOfCoins=this.starIndexOfCoins+this.limitOfCoins;
-        CoinMarketController cmc=new CoinMarketController(this,apiRequest,this.starIndexOfCoins,this.limitOfCoins);
+        CoinMarketController cmc=new CoinMarketController(this,apiRequest,this.handler,this.starIndexOfCoins,this.limitOfCoins);
         this.executorService.execute(cmc);
 //        this.executorService.shutdown();
     }

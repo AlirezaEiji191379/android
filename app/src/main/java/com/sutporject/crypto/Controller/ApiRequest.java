@@ -1,17 +1,22 @@
 package com.sutporject.crypto.Controller;
 
+import android.content.Context;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 
 import androidx.annotation.Keep;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.RequestBuilder;
 import com.sutporject.crypto.model.Crypto;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.concurrent.ArrayBlockingQueue;
+
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.HttpUrl;
@@ -21,19 +26,26 @@ import okhttp3.Response;
 
 public class ApiRequest{
 
+    private Context context;
     private Handler handler;
     private final String API_KEY="b7338e0c-e7d6-484c-ade8-77c577cb7773";
-    private final String url="https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest";
+    private final String urlForData="https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest";
+    private final String urlForImage="https://pro-api.coinmarketcap.com/v1/cryptocurrency/info";
     private boolean done=true;
     private ArrayList<Crypto> allFetchedCrypto=new ArrayList<>();
-
+    private ArrayList<RequestBuilder> allFetchedDrawables=new ArrayList<>();
     //private final OkHttpClient httpClient=new OkHttpClient();
-    public ApiRequest(Handler handler) {
+    public ApiRequest(Handler handler,Context context) {
         this.handler = handler;
+        this.context=context;
     }
 
-    public ArrayList<Crypto> getFetchedCryptos() {
+    public synchronized ArrayList<Crypto> getFetchedCryptos() {
         return allFetchedCrypto;
+    }
+
+    public synchronized ArrayList<RequestBuilder> getAllFetchedDrawables() {
+        return allFetchedDrawables;
     }
 
     public synchronized void  doGetRequestForCryptoData(int start, int limit) throws IOException{
@@ -45,7 +57,8 @@ public class ApiRequest{
             }
         }
         this.done=false;
-        HttpUrl.Builder urlBuilder = HttpUrl.parse(this.url).newBuilder();
+        allFetchedCrypto.clear();
+        HttpUrl.Builder urlBuilder = HttpUrl.parse(this.urlForData).newBuilder();
         urlBuilder.addQueryParameter("limit", String.valueOf(limit));
         urlBuilder.addQueryParameter("start", String.valueOf(start));
         String url = urlBuilder.build().toString();
@@ -56,7 +69,7 @@ public class ApiRequest{
         OkHttpClient httpClient=new OkHttpClient();
         httpClient.newCall(request).enqueue(new Callback() {
             private void extractResponseFromRequest(Response response){
-                done=true;
+               done=true;
                 try {
                     String resp=response.body().string();
                     Log.i("resposne", resp);
@@ -74,12 +87,12 @@ public class ApiRequest{
                         double percentage_change_1h=(double) usd.get("percent_change_1h");
                         double percentage_change_24h=(double) usd.get("percent_change_24h");
                         double percentage_change_7d=(double) usd.get("percent_change_7d");
-                        Log.i("main90",name);
+                        Log.i("main90", String.valueOf(id));
                         Crypto newCrypto=new Crypto(id,name,symbol,price,percentage_change_1h,percentage_change_7d,percentage_change_24h);
                         allFetchedCrypto.add(newCrypto);
                     }
 //                    Message msg=Message.obtain();
-//                    msg.obj=allCrypto;
+//                    msg.obj=allFetchedCrypto;
 //                    handler.sendMessage(msg);
                 } catch (IOException | JSONException e) {
                     e.printStackTrace();
@@ -111,7 +124,8 @@ public class ApiRequest{
             }
         }
         this.done=false;
-        HttpUrl.Builder urlBuilder = HttpUrl.parse(this.url).newBuilder();
+        allFetchedDrawables.clear();
+        HttpUrl.Builder urlBuilder = HttpUrl.parse(this.urlForImage).newBuilder();
         urlBuilder.addQueryParameter("id", String.valueOf(id));
         String url = urlBuilder.build().toString();
         Request request=new Request.Builder().url(url)
@@ -126,13 +140,17 @@ public class ApiRequest{
                     String resp=response.body().string();
                     Log.i("resposne", resp);
                     JSONObject jsonResponse=new JSONObject(resp);
-                    JSONArray data=  jsonResponse.getJSONArray("data");
+                    JSONObject data=  jsonResponse.getJSONObject("data");
+                    Log.i("data: ", String.valueOf(data));
                     //ArrayList<Crypto> allCrypto=new ArrayList<>();
-                    for(int i=0;i<data.length();i++){
-                        JSONObject model=data.getJSONObject(i);
-                        Log.i("data: ", String.valueOf(model));
+                    String [] tokenize=id.split(",");
+                    for(int i=0;i<tokenize.length;i++){
+                        JSONObject model=data.getJSONObject(tokenize[i]);
+                        String logoUrl= (String) model.get("logo");
+                        allFetchedDrawables.add(Glide.with(context).load(logoUrl));
+                        Log.i("data: ", logoUrl);
                     }
-//                    Message msg=Message.obtain();
+//                   Message msg=Message.obtain();
 //                    msg.obj=allCrypto;
 //                    handler.sendMessage(msg);
                 } catch (IOException | JSONException e) {
