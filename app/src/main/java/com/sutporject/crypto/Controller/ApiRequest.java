@@ -28,16 +28,18 @@ public class ApiRequest {
     private final String API_KEY="b7338e0c-e7d6-484c-ade8-77c577cb7773";
     private final String url="https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest";
     private boolean done=true;
-
+    private ArrayList<Crypto> allFetchedCrypto=new ArrayList<>();
 
     //private final OkHttpClient httpClient=new OkHttpClient();
     public ApiRequest(Handler handler) {
         this.handler = handler;
     }
 
+    public ArrayList<Crypto> getFetchedCryptos() {
+        return allFetchedCrypto;
+    }
 
-
-    public synchronized void  doGetRequest(int start,int limit) throws IOException{
+    public synchronized void  doGetRequestForCryptoData(int start, int limit) throws IOException{
         while (done==false){
             try {
                 wait();
@@ -46,7 +48,6 @@ public class ApiRequest {
             }
         }
         this.done=false;
-        //Log.i("main1","the thread "+Thread.currentThread().getName() +" is started!");
         HttpUrl.Builder urlBuilder = HttpUrl.parse(this.url).newBuilder();
         urlBuilder.addQueryParameter("limit", String.valueOf(limit));
         urlBuilder.addQueryParameter("start", String.valueOf(start));
@@ -55,7 +56,6 @@ public class ApiRequest {
                 .addHeader("Content-type","application/json")
                 .addHeader("X-CMC_PRO_API_KEY",this.API_KEY)
                 .build();
-        //Log.i("main2","the thread "+Thread.currentThread().getName() +" made one request!");
         OkHttpClient httpClient=new OkHttpClient();
         httpClient.newCall(request).enqueue(new Callback() {
             private void extractResponseFromRequest(Response response){
@@ -65,7 +65,7 @@ public class ApiRequest {
                     Log.i("resposne", resp);
                     JSONObject jsonResponse=new JSONObject(resp);
                     JSONArray data=  jsonResponse.getJSONArray("data");
-                    ArrayList<Crypto> allCrypto=new ArrayList<>();
+                    //ArrayList<Crypto> allCrypto=new ArrayList<>();
                     for(int i=0;i<data.length();i++){
                         JSONObject model=data.getJSONObject(i);
                         int id=model.getInt("id");
@@ -79,13 +79,11 @@ public class ApiRequest {
                         double percentage_change_7d=(double) usd.get("percent_change_7d");
                         Log.i("main90",name);
                         Crypto newCrypto=new Crypto(id,name,symbol,price,percentage_change_1h,percentage_change_7d,percentage_change_24h);
-                        allCrypto.add(newCrypto);
+                        allFetchedCrypto.add(newCrypto);
                     }
-                    Message msg=Message.obtain();
-                    msg.obj=allCrypto;
-                    handler.sendMessage(msg);
-                   // Log.i("main7","the thread "+Thread.currentThread().getId() +" is ended!");
-                   // Log.i("mainx","-------------------------------------------------------------------------------------");
+//                    Message msg=Message.obtain();
+//                    msg.obj=allCrypto;
+//                    handler.sendMessage(msg);
                 } catch (IOException | JSONException e) {
                     e.printStackTrace();
                 }
@@ -102,12 +100,15 @@ public class ApiRequest {
                 extractResponseFromRequest(response);
             }
         });
-        //Log.i("main3","the thread "+Thread.currentThread().getName() +" is on the end of function!");
         while (done==false){
             notifyAll();
         }
     }
 
+    public synchronized void doGetRequestForCryptoLogo(){
+
+
+    }
 
 
 }
