@@ -1,9 +1,13 @@
 package com.sutporject.crypto;
 
+import android.graphics.drawable.Drawable;
+import android.media.Image;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.RequestBuilder;
 import com.sutporject.crypto.Controller.ApiRequest;
 import com.sutporject.crypto.Controller.CoinMarketController;
 import com.sutporject.crypto.model.Crypto;
@@ -21,6 +25,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -87,8 +92,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void btnClicked(View view){
-        if(view.isEnabled()==false) return;
-        view.setEnabled(false);
+        //if(view.isEnabled()==false) return;
+        //view.setEnabled(false);
         if(this.executorService.isTerminated()) this.executorService=Executors.newCachedThreadPool();
         this.starIndexOfCoins=this.starIndexOfCoins+this.limitOfCoins;
         CoinMarketController cmc=new CoinMarketController(this,apiRequest,this.starIndexOfCoins,this.limitOfCoins);

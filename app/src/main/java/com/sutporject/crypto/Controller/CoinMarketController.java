@@ -33,6 +33,7 @@ public class CoinMarketController implements Runnable{
         if (this.checkDeviceConnection()){
             try {
                 api.doGetRequestForCryptoData(this.start,this.limit);
+                api.doGetRequestForCryptoLogo("1,1027");
             } catch (IOException e) {
                 e.printStackTrace();
             }
