@@ -16,9 +16,11 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.text.method.ScrollingMovementMethod;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -29,6 +31,11 @@ import java.util.concurrent.Executors;
 import static android.widget.Toast.LENGTH_LONG;
 
 public class MainActivity extends AppCompatActivity {
+
+    private int starIndexOfCoins;
+    private final int limitOfCoins=5;
+    private ApiRequest apiRequest;
+    private ExecutorService executorService;
 
     Handler handler=new Handler(Looper.getMainLooper()){
         @Override
@@ -43,30 +50,30 @@ public class MainActivity extends AppCompatActivity {
                 lastText=lastText+"\n\n"+all.get(i).toString();
             }
             textView.setText(lastText);
+            findViewById(R.id.viewBtn).setEnabled(true);
         }
     };
 
-    private ApiRequest apiRequest;
-    private ExecutorService executorService;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        apiRequest=new ApiRequest(this.handler,0);
+        this.starIndexOfCoins=1;
+        apiRequest=new ApiRequest(this.handler);
         this.executorService= Executors.newCachedThreadPool();
         ///
-        CoinMarketController cmc=new CoinMarketController(this,apiRequest);
+        CoinMarketController cmc=new CoinMarketController(this,apiRequest,this.starIndexOfCoins,this.limitOfCoins);
         ///
         this.executorService.execute(cmc);
+        //executorService.shutdown();
     }
 
     @Override
     public void onResume() {
         super.onResume();
         ConnectivityManager cm = (ConnectivityManager) this.getSystemService(CONNECTIVITY_SERVICE);///(ConnectivityManager) this.getSystemService(CONNECTIVITY_SERVICE);
-
         NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
         boolean isConnected = activeNetwork != null &&
                 activeNetwork.isConnectedOrConnecting();
@@ -80,18 +87,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void btnClicked(View view){
-        CoinMarketController cmc=new CoinMarketController(this,apiRequest);
-        CoinMarketController cmc1=new CoinMarketController(this,apiRequest);
-        CoinMarketController cmc2=new CoinMarketController(this,apiRequest);
-        CoinMarketController cmc3=new CoinMarketController(this,apiRequest);
-        CoinMarketController cmc4=new CoinMarketController(this,apiRequest);
-        CoinMarketController cmc5=new CoinMarketController(this,apiRequest);
+        if(view.isEnabled()==false) return;
+        view.setEnabled(false);
+        if(this.executorService.isTerminated()) this.executorService=Executors.newCachedThreadPool();
+        this.starIndexOfCoins=this.starIndexOfCoins+this.limitOfCoins;
+        CoinMarketController cmc=new CoinMarketController(this,apiRequest,this.starIndexOfCoins,this.limitOfCoins);
         this.executorService.execute(cmc);
-        this.executorService.execute(cmc1);
-        this.executorService.execute(cmc2);
-        this.executorService.execute(cmc3);
-        this.executorService.execute(cmc4);
-        this.executorService.execute(cmc5);
+//        this.executorService.shutdown();
     }
 
     @Override

@@ -13,7 +13,7 @@ public class Crypto {
 
 
     public Crypto(int id, String name, String symbol, double price, double changesSinceLastHour, double changesSinceLastDay, double changesSinceLastWeek) {
-        this.id=id;
+        this.id = id;
         this.name = name;
         this.symbol = symbol;
         this.price = price;
@@ -21,6 +21,7 @@ public class Crypto {
         this.changesSinceLastDay = changesSinceLastDay;
         this.changesSinceLastWeek = changesSinceLastWeek;
     }
+
     public int getId() { return this.id;}
 
     public String getName() {

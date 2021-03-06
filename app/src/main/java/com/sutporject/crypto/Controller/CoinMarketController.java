@@ -8,16 +8,19 @@ import java.io.IOException;
 
 
 public class CoinMarketController implements Runnable{
-
+    private int start;
+    private int limit;
     private ApiRequest api;
     private  Context appCurrentActivity;
 
-    public CoinMarketController(Context appCurrentActivity, ApiRequest api) {
+    public CoinMarketController(Context appCurrentActivity, ApiRequest api ,int start, int limit) {
         this.appCurrentActivity = appCurrentActivity;
         this.api=api;
+        this.start=start;
+        this.limit=limit;
     }
 
-    public synchronized boolean checkDeviceConnection(){
+    public boolean checkDeviceConnection(){
         ConnectivityManager cm = (ConnectivityManager) this.appCurrentActivity.getSystemService(appCurrentActivity.CONNECTIVITY_SERVICE);
         NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
         boolean isConnected = activeNetwork != null &&
@@ -29,8 +32,8 @@ public class CoinMarketController implements Runnable{
     public void run() {
         if (this.checkDeviceConnection()){
             try {
-                api.doGetRequest();
-            } catch (IOException | InterruptedException e) {
+                api.doGetRequest(this.start,this.limit);
+            } catch (IOException e) {
                 e.printStackTrace();
             }
         }
