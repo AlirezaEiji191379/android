@@ -14,7 +14,10 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.concurrent.ArrayBlockingQueue;
 
 import okhttp3.Call;
@@ -28,12 +31,18 @@ public class ApiRequest{
 
     private Context context;
     private Handler handler;
-    private final String API_KEY="b7338e0c-e7d6-484c-ade8-77c577cb7773";
+    private final String API_KEY_CoinMarket="b7338e0c-e7d6-484c-ade8-77c577cb7773";
+    private final String API_KEY_Candles="80A71684-F679-44B2-BBE0-A0C9B7E49597";
     private final String urlForData="https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest";
     private final String urlForImage="https://pro-api.coinmarketcap.com/v1/cryptocurrency/info";
     private boolean done=true;
     private ArrayList<Crypto> allFetchedCrypto=new ArrayList<>();
     private ArrayList<RequestBuilder> allFetchedDrawables=new ArrayList<>();
+
+    public enum Range {
+        weekly,
+        oneMonth,
+    }
     //private final OkHttpClient httpClient=new OkHttpClient();
     public ApiRequest(Handler handler,Context context) {
         this.handler = handler;
@@ -64,7 +73,7 @@ public class ApiRequest{
         String url = urlBuilder.build().toString();
         Request request=new Request.Builder().url(url)
                 .addHeader("Content-type","application/json")
-                .addHeader("X-CMC_PRO_API_KEY",this.API_KEY)
+                .addHeader("X-CMC_PRO_API_KEY",this.API_KEY_CoinMarket)
                 .build();
         OkHttpClient httpClient=new OkHttpClient();
         httpClient.newCall(request).enqueue(new Callback() {
@@ -130,7 +139,7 @@ public class ApiRequest{
         String url = urlBuilder.build().toString();
         Request request=new Request.Builder().url(url)
                 .addHeader("Content-type","application/json")
-                .addHeader("X-CMC_PRO_API_KEY",this.API_KEY)
+                .addHeader("X-CMC_PRO_API_KEY",this.API_KEY_CoinMarket)
                 .build();
         OkHttpClient httpClient=new OkHttpClient();
         httpClient.newCall(request).enqueue(new Callback() {
@@ -174,5 +183,59 @@ public class ApiRequest{
         }
     }
 
+    public void getCandles(String symbol,Range range) {
 
+        OkHttpClient okHttpClient = new OkHttpClient();
+
+        String miniUrl;
+        final String description;
+
+        Date date=new Date();
+        SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
+        formatter.format(date);
+        switch (range) {
+
+            case weekly:
+                miniUrl = "period_id=1DAY".concat("&time_end=".concat(formatter.toString()).concat("&limit=7"));
+                description = "Daily candles from now";
+                break;
+
+            case oneMonth:
+                 miniUrl = "period_id=1DAY".concat("&time_end=".concat(formatter.toString()).concat("&limit=30"));
+                description = "Daily candles from now";
+                break;
+
+            default:
+                miniUrl = "";
+                description = "";
+
+        }
+
+        HttpUrl.Builder urlBuilder = HttpUrl.parse("https://rest.coinapi.io/v1/ohlcv/".concat(symbol).concat("/USD/history?".concat(miniUrl)))
+                .newBuilder();
+
+        String url = urlBuilder.build().toString();
+
+        final Request request = new Request.Builder().url(url)
+                .addHeader("X-CoinAPI-Key", this.API_KEY_Candles)
+                .build();
+
+        okHttpClient.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                Log.v("TAG", e.getMessage());
+            }
+
+            @Override
+            public void onResponse(Call call, final Response response) throws IOException {
+
+                if (!response.isSuccessful()) {
+                    throw new IOException("Unexpected code " + response);
+                } else {
+                    //extractCandlesFromResponse(response.body().string(), description);
+                }
+            }
+        });
+
+    }
 }
