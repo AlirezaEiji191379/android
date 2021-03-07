@@ -4,6 +4,7 @@ import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
 
 import com.sutporject.crypto.model.Candle;
@@ -43,6 +44,10 @@ public class CoinCandleController implements Runnable {
             for (int i = 0; i < 7; i++) {
                 all.add(allCandles.take());
             }
+            Message message=Message.obtain();
+            message.obj=all;
+            handler.sendMessage(message);
+
         } catch (InterruptedException e) {
             e.printStackTrace();
         }

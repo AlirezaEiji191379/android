@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.text.method.ScrollingMovementMethod;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -20,7 +21,9 @@ import androidx.appcompat.widget.Toolbar;
 
 import com.sutporject.crypto.Controller.ApiRequest;
 import com.sutporject.crypto.Controller.CoinCandleController;
+import com.sutporject.crypto.model.Candle;
 
+import java.util.ArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -36,6 +39,13 @@ public class candleActivity extends Activity {
         @Override
         public void handleMessage(@NonNull Message msg) {
             super.handleMessage(msg);
+            ArrayList<Candle>allCandles= (ArrayList<Candle>) msg.obj;
+            TextView textView=(TextView) findViewById(R.id.textView1);
+            CharSequence lastText= textView.getText();
+            for(int i=0;i<allCandles.size();i++){
+                lastText=lastText+"\n\n"+allCandles.get(i).toString();
+            }
+            textView.setText(lastText);
         }
     };
 
@@ -45,10 +55,11 @@ public class candleActivity extends Activity {
         setContentView(R.layout.activity_candle);
         Toolbar toolbar = findViewById(R.id.toolbar);
         TextView textView=(TextView) findViewById(R.id.textView1);
-        textView.setText("rezaaa");
+        textView.setMovementMethod(new ScrollingMovementMethod());
+        textView.setText("");
         apiRequest=new ApiRequest(this.handler,this);
         this.executorService= Executors.newCachedThreadPool();
-        CoinCandleController c=new CoinCandleController(apiRequest,this,handler,"BTC", ApiRequest.Range.weekly);
+        CoinCandleController c=new CoinCandleController(apiRequest,this,handler,"ETH", ApiRequest.Range.weekly);
         this.executorService.execute(c);
     }
 

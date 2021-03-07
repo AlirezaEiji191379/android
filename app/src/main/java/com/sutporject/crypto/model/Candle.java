@@ -1,5 +1,7 @@
 package com.sutporject.crypto.model;
 
+import androidx.annotation.NonNull;
+
 public class Candle {
     private String symbol;
     private double open;
@@ -15,4 +17,9 @@ public class Candle {
         this.low = low;
     }
 
+    @NonNull
+    @Override
+    public String toString() {
+        return new StringBuilder("").append(symbol+" ").append(open+" ").append(close+" ").append(high+" ").append(low+" ").toString();
+    }
 }
