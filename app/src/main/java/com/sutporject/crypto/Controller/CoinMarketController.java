@@ -24,12 +24,18 @@ public class CoinMarketController implements Runnable{
     private ApiRequest api;
     private  Context appCurrentActivity;
     private Handler handler;
+    private ArrayBlockingQueue<Crypto> cryptoArrayBlockingQueue;
+    private ArrayBlockingQueue<RequestBuilder> requestBuilderArrayBlockingQueue;
     public CoinMarketController(Context appCurrentActivity, ApiRequest api , android.os.Handler handler, int start, int limit) {
         this.appCurrentActivity = appCurrentActivity;
         this.api=api;
         this.start=start;
         this.limit=limit;
         this.handler=handler;
+        cryptoArrayBlockingQueue=new ArrayBlockingQueue<>(limit);
+        requestBuilderArrayBlockingQueue=new ArrayBlockingQueue<>(limit);
+        api.setAllFetchedCrypto(cryptoArrayBlockingQueue);
+        api.setAllFetchedDrawables(requestBuilderArrayBlockingQueue);
     }
 
     public boolean checkDeviceConnection(){
@@ -40,33 +46,38 @@ public class CoinMarketController implements Runnable{
         return isConnected;
     }
 
+    private void getDataFromInternet(){
+        try {
+            api.doGetRequestForCryptoData(start,limit);
+            ArrayList<Crypto> allCryptos=new ArrayList<>();
+            ArrayList<RequestBuilder>allRbs=new ArrayList<>();
+            for(int i=0;i<limit;i++){
+                allCryptos.add(cryptoArrayBlockingQueue.take());
+            }
+            StringBuilder id=new StringBuilder("");
+            for(int i=0;i<allCryptos.size();i++){
+                id.append(allCryptos.get(i).getId()+",");
+            }
+            id.deleteCharAt(id.lastIndexOf(","));
+            api.doGetRequestForCryptoLogo(id.toString());
+            for(int i=0;i<limit;i++){
+                allRbs.add(requestBuilderArrayBlockingQueue.take());
+            }
+            ArrayList<Object> objects=new ArrayList<>();
+            objects.add(allCryptos);
+            objects.add(allRbs);
+            Message message=Message.obtain();
+            message.obj=objects;
+            handler.sendMessage(message);
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
     @Override
     public void run() {
         if (this.checkDeviceConnection()){
-            try {
-             api.doGetRequestForCryptoData(start,limit);
-             while (api.getFetchedCryptos().size()!=limit){}
-             ArrayList<Crypto> allCryptos=api.getFetchedCryptos();
-             Log.i("main90xxxx", String.valueOf(allCryptos.size()));
-             StringBuilder id=new StringBuilder("");
-             for(int i=0;i<allCryptos.size();i++){
-                id.append(allCryptos.get(i).getId()+",");
-             }
-             id.deleteCharAt(id.lastIndexOf(","));
-             Log.i("main90xxxx", String.valueOf(id));
-             api.doGetRequestForCryptoLogo(id.toString());
-             while (api.getAllFetchedDrawables().size()!=limit){}
-             ArrayList<RequestBuilder>allRbs=api.getAllFetchedDrawables();
-             ArrayList<Object> objects=new ArrayList<>();
-             objects.add(allCryptos);
-             objects.add(allRbs);
-             Message message=Message.obtain();
-             message.obj=objects;
-             handler.sendMessage(message);
-
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            this.getDataFromInternet();
         }
         else{
 

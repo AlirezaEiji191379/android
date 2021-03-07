@@ -47,5 +47,12 @@
             android:layout_height="84dp"
             tools:srcCompat="@tools:sample/avatars" />
 
+        <Button
+            android:id="@+id/nextPage"
+            android:layout_width="match_parent"
+            android:layout_height="80dp"
+            android:onClick="nextPageClicked"
+            android:text="next" />
+
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

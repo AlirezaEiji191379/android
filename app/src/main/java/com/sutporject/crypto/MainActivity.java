@@ -1,5 +1,6 @@
 package com.sutporject.crypto;
 
+import android.content.Intent;
 import android.graphics.drawable.Drawable;
 import android.media.Image;
 import android.net.ConnectivityManager;
@@ -105,6 +106,11 @@ public class MainActivity extends AppCompatActivity {
         CoinMarketController cmc=new CoinMarketController(this,apiRequest,this.handler,this.starIndexOfCoins,this.limitOfCoins);
         this.executorService.execute(cmc);
 //        this.executorService.shutdown();
+    }
+
+    public void nextPageClicked(View view){
+        Intent intent=new Intent(this,candleActivity.class);
+        startActivity(intent);
     }
 
     @Override
