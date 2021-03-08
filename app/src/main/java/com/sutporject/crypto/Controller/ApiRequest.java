@@ -11,11 +11,14 @@ import androidx.annotation.RequiresApi;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.RequestBuilder;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.sutporject.crypto.model.Candle;
 import com.sutporject.crypto.model.Crypto;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
@@ -25,6 +28,7 @@ import java.util.Date;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
+import okhttp3.Cache;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.HttpUrl;
@@ -58,7 +62,6 @@ public class ApiRequest{
             return this.num;
         }
     }
-    //private final OkHttpClient httpClient=new OkHttpClient();
     public ApiRequest(Handler handler,Context context) {
         this.handler = handler;
         this.context=context;
@@ -94,7 +97,13 @@ public class ApiRequest{
                 .addHeader("Content-type","application/json")
                 .addHeader("X-CMC_PRO_API_KEY",this.API_KEY_CoinMarket)
                 .build();
-        OkHttpClient httpClient=new OkHttpClient();
+        File httpCacheDirectory = new File(context.getCacheDir(), "http-cache");
+        int cacheSize = 10 * 1024 * 1024; // 10 MiB
+        Cache cache = new Cache(httpCacheDirectory, cacheSize);
+        OkHttpClient httpClient= new OkHttpClient.Builder()
+                .addNetworkInterceptor(new CacheInterceptor())
+                .cache(cache)
+                .build();
         httpClient.newCall(request).enqueue(new Callback() {
             private void extractResponseFromRequest(Response response){
                done=true;
@@ -156,7 +165,13 @@ public class ApiRequest{
                 .addHeader("Content-type","application/json")
                 .addHeader("X-CMC_PRO_API_KEY",this.API_KEY_CoinMarket)
                 .build();
-        OkHttpClient httpClient=new OkHttpClient();
+        File httpCacheDirectory = new File(context.getCacheDir(), "http-cache");
+        int cacheSize = 10 * 1024 * 1024; // 10 MiB
+        Cache cache = new Cache(httpCacheDirectory, cacheSize);
+        OkHttpClient httpClient= new OkHttpClient.Builder()
+                .addNetworkInterceptor(new CacheInterceptor())
+                .cache(cache)
+                .build();
         httpClient.newCall(request).enqueue(new Callback() {
             private void extractResponseFromRequest(Response response){
                 done=true;
@@ -171,12 +186,9 @@ public class ApiRequest{
                     for(int i=0;i<tokenize.length;i++){
                         JSONObject model=data.getJSONObject(tokenize[i]);
                         String logoUrl= (String) model.get("logo");
-                        allFetchedDrawables.put(Glide.with(context).load(logoUrl));
+                        allFetchedDrawables.put(Glide.with(context).load(logoUrl).diskCacheStrategy(DiskCacheStrategy.RESOURCE));
                         Log.i("data: ", logoUrl);
                     }
-//                   Message msg=Message.obtain();
-//                    msg.obj=allCrypto;
-//                    handler.sendMessage(msg);
                 } catch (IOException | JSONException | InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -199,7 +211,13 @@ public class ApiRequest{
     }
 
     public synchronized void doGetRequestForCandles(String symbol, Range range) {
-        OkHttpClient okHttpClient = new OkHttpClient();
+        File httpCacheDirectory = new File(context.getCacheDir(), "http-cache");
+        int cacheSize = 10 * 1024 * 1024; // 10 MiB
+        Cache cache = new Cache(httpCacheDirectory, cacheSize);
+        OkHttpClient httpClient= new OkHttpClient.Builder()
+                .addNetworkInterceptor(new CacheInterceptor())
+                .cache(cache)
+                .build();
 
         String miniUrl;
         final String description;
@@ -234,7 +252,7 @@ public class ApiRequest{
                 .addHeader("X-CoinAPI-Key", this.API_KEY_Candles)
                 .build();
 
-        okHttpClient.newCall(request).enqueue(new Callback() {
+        httpClient.newCall(request).enqueue(new Callback() {
             private void extractCandles(Response response){
                 try {
                     String resp=response.body().string();

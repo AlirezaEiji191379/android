@@ -9,6 +9,7 @@ import android.os.Bundle;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.RequestBuilder;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.sutporject.crypto.Controller.ApiRequest;
 import com.sutporject.crypto.Controller.CoinMarketController;
 import com.sutporject.crypto.model.Crypto;
@@ -43,7 +44,7 @@ public class MainActivity extends AppCompatActivity {
     private final int limitOfCoins=3;
     private ApiRequest apiRequest;
     private ExecutorService executorService;
-
+    //https://s2.coinmarketcap.com/static/img/coins/64x64/1.png
     Handler handler=new Handler(Looper.getMainLooper()){
         @Override
         public void handleMessage(@NonNull Message msg) {
@@ -73,6 +74,8 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         this.starIndexOfCoins=1;
+        //ImageView imageView=(ImageView) findViewById(R.id.imageView);
+        //Glide.with(this).load("https://s2.coinmarketcap.com/static/img/coins/64x64/1.png").diskCacheStrategy(DiskCacheStrategy.RESOURCE).into(imageView);
         apiRequest=new ApiRequest(this.handler,this);
         this.executorService= Executors.newCachedThreadPool();
         ///

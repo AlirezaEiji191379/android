@@ -76,12 +76,7 @@ public class CoinMarketController implements Runnable{
 
     @Override
     public void run() {
-        if (this.checkDeviceConnection()){
-            this.getDataFromInternet();
-        }
-        else{
-
-        }
+        this.getDataFromInternet();
     }
 
 }
