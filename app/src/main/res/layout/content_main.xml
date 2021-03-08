@@ -16,15 +16,23 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
+        <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+            xmlns:android="http://schemas.android.com/apk/res/android"
+            android:id="@+id/swiperefresh"
+            android:layout_width="match_parent"
+            android:layout_height="640dp">
+
         <ListView
             android:id="@+id/list"
             android:layout_width="match_parent"
-            android:layout_height="639dp" />
+            android:layout_height="640dp"/>
+
+        </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
         <Button
             android:id="@+id/viewBtn"
             android:layout_width="match_parent"
-            android:layout_height="89dp"
+            android:layout_height="match_parent"
             android:background="#971515"
             android:onClick="btnClicked"
             android:text="Load More..."

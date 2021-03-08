@@ -13,6 +13,7 @@ import com.sutporject.crypto.model.Crypto;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import android.os.Handler;
 import android.os.Looper;
@@ -37,6 +38,7 @@ public class MainActivity extends AppCompatActivity {
     private ExecutorService executorService;
     private ListView lView;
     private Adapter listAdapter;
+    private SwipeRefreshLayout refreshLayout;
 
     Handler handler=new Handler(Looper.getMainLooper()){
         @Override
@@ -57,7 +59,7 @@ public class MainActivity extends AppCompatActivity {
             ArrayList<RequestBuilder> icons = new ArrayList<>();
 
 
-            for (int i = 0; i < 3; i++) {
+            for (int i = 0; i < allCrypto.size(); i++) {
                 Crypto crypto = allCrypto.get(i);
                 symbols.add(crypto.getSymbol());
                 names.add(crypto.getName());
@@ -68,7 +70,7 @@ public class MainActivity extends AppCompatActivity {
                 icons.add(allRbs.get(i));
             }
 
-            if(listAdapter == null)
+            if(listAdapter == null || refreshLayout.isRefreshing())
                 listAdapter = new Adapter(MainActivity.this, symbols, names, icons,prices,hour,day,week);
             else
                 listAdapter.addItems(symbols, names, icons,prices,hour,day,week);
@@ -76,6 +78,9 @@ public class MainActivity extends AppCompatActivity {
             lView.setAdapter(listAdapter);
 
             findViewById(R.id.viewBtn).setEnabled(true);
+            if(refreshLayout.isRefreshing())
+                Toast.makeText(getApplicationContext(),"Updated!", LENGTH_LONG).show();
+            refreshLayout.setRefreshing(false);
         }
     };
 
@@ -93,6 +98,19 @@ public class MainActivity extends AppCompatActivity {
         ///
         this.executorService.execute(cmc);
         //executorService.shutdown();
+
+        refreshLayout = findViewById(R.id.swiperefresh);
+        refreshLayout.setOnRefreshListener(
+                new SwipeRefreshLayout.OnRefreshListener() {
+                    @Override
+                    public void onRefresh() {
+                        if(executorService.isTerminated()) executorService=Executors.newCachedThreadPool();
+                        CoinMarketController cmc=new CoinMarketController(getApplicationContext(),apiRequest,handler,1,starIndexOfCoins+limitOfCoins-1);
+                        executorService.execute(cmc);
+                    }
+                }
+        );
+
     }
 
     @Override
