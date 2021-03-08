@@ -7,52 +7,30 @@
     app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
     <LinearLayout
-        android:id="@+id/myLinearLayout"
+        android:id="@+id/linear"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:visibility="visible"
         app:layout_constraintBottom_toBottomOf="parent"
-        tools:layout_editor_absoluteX="145dp">
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
-        <TextView
-            android:id="@+id/textView"
+        <ListView
+            android:id="@+id/list"
             android:layout_width="match_parent"
-            android:layout_height="277dp"
-            android:scrollbars="vertical"
-            android:text="TextView" />
+            android:layout_height="639dp" />
 
         <Button
             android:id="@+id/viewBtn"
             android:layout_width="match_parent"
-            android:layout_height="75dp"
+            android:layout_height="89dp"
+            android:background="#971515"
             android:onClick="btnClicked"
-            android:text="view more" />
-
-        <ImageView
-            android:id="@+id/imageView"
-            android:layout_width="378dp"
-            android:layout_height="56dp"
-            tools:srcCompat="@tools:sample/avatars" />
-
-        <ImageView
-            android:id="@+id/imageView2"
-            android:layout_width="377dp"
-            android:layout_height="81dp"
-            tools:srcCompat="@tools:sample/avatars" />
-
-        <ImageView
-            android:id="@+id/imageView3"
-            android:layout_width="378dp"
-            android:layout_height="84dp"
-            tools:srcCompat="@tools:sample/avatars" />
-
-        <Button
-            android:id="@+id/nextPage"
-            android:layout_width="match_parent"
-            android:layout_height="80dp"
-            android:onClick="nextPageClicked"
-            android:text="next" />
+            android:text="Load More..."
+            android:textColorHighlight="#FFFFFF"
+            app:rippleColor="#B53E3E"
+            app:strokeColor="#872626" />
 
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

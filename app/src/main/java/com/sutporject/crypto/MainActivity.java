@@ -1,13 +1,10 @@
 package com.sutporject.crypto;
 
 import android.content.Intent;
-import android.graphics.drawable.Drawable;
-import android.media.Image;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
 
-import com.bumptech.glide.Glide;
 import com.bumptech.glide.RequestBuilder;
 import com.sutporject.crypto.Controller.ApiRequest;
 import com.sutporject.crypto.Controller.CoinMarketController;
@@ -20,18 +17,13 @@ import androidx.appcompat.widget.Toolbar;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
-import android.text.method.ScrollingMovementMethod;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.Button;
-import android.widget.ImageView;
-import android.widget.TextView;
+import android.widget.ListView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -43,25 +35,46 @@ public class MainActivity extends AppCompatActivity {
     private final int limitOfCoins=3;
     private ApiRequest apiRequest;
     private ExecutorService executorService;
+    private ListView lView;
+    private Adapter listAdapter;
 
     Handler handler=new Handler(Looper.getMainLooper()){
         @Override
         public void handleMessage(@NonNull Message msg) {
             super.handleMessage(msg);
-            TextView textView=(TextView) findViewById(R.id.textView);
-            CharSequence lastText= textView.getText();
-            textView.setText("");
-            textView.setMovementMethod(new ScrollingMovementMethod());
             ArrayList<Object> obj= (ArrayList<Object>) msg.obj;
             ArrayList<Crypto> allCrypto= (ArrayList<Crypto>) obj.get(0);
             ArrayList<RequestBuilder> allRbs= (ArrayList<RequestBuilder>) obj.get(1);
-            for(int i=0;i<allCrypto.size();i++){
-                lastText=lastText+"\n\n"+allCrypto.get(i).toString();
+
+            lView = (ListView) findViewById(R.id.list);
+
+            ArrayList<String> symbols = new ArrayList<>();
+            ArrayList<String> names = new ArrayList<>();
+            ArrayList<String> prices = new ArrayList<>();
+            ArrayList<String> hour = new ArrayList<>();
+            ArrayList<String> day = new ArrayList<>();
+            ArrayList<String> week = new ArrayList<>();
+            ArrayList<RequestBuilder> icons = new ArrayList<>();
+
+
+            for (int i = 0; i < 3; i++) {
+                Crypto crypto = allCrypto.get(i);
+                symbols.add(crypto.getSymbol());
+                names.add(crypto.getName());
+                prices.add(Double.toString(crypto.getPrice()));
+                hour.add(Double.toString(crypto.getChangesSinceLastHour()));
+                day.add(Double.toString(crypto.getChangesSinceLastDay()));
+                week.add(Double.toString(crypto.getChangesSinceLastWeek()));
+                icons.add(allRbs.get(i));
             }
-            allRbs.get(0).into((ImageView) findViewById(R.id.imageView));
-            allRbs.get(1).into((ImageView) findViewById(R.id.imageView2));
-            allRbs.get(2).into((ImageView) findViewById(R.id.imageView3));
-            textView.setText(lastText);
+
+            if(listAdapter == null)
+                listAdapter = new Adapter(MainActivity.this, symbols, names, icons,prices,hour,day,week);
+            else
+                listAdapter.addItems(symbols, names, icons,prices,hour,day,week);
+
+            lView.setAdapter(listAdapter);
+
             findViewById(R.id.viewBtn).setEnabled(true);
         }
     };
