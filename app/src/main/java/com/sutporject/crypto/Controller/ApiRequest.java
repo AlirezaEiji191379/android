@@ -115,7 +115,7 @@ public class ApiRequest{
                         String name= (String) model.get("name");
                         String symbol=(String) model.get("symbol");
                         Log.i("responses", symbol);
-                        double price= (double) usd.get("price");
+                        double price= Double.parseDouble(String.valueOf(usd.get("price")));
                         double percentage_change_1h=Double.parseDouble(String.valueOf(usd.get("percent_change_1h")));
                         double percentage_change_24h=Double.parseDouble (String.valueOf(usd.get("percent_change_24h")));
                         double percentage_change_7d=Double.parseDouble(String.valueOf(usd.get("percent_change_7d")));
