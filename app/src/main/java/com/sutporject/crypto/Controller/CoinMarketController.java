@@ -68,6 +68,7 @@ public class CoinMarketController implements Runnable{
             objects.add(allRbs);
             Message message=Message.obtain();
             message.obj=objects;
+            message.what=1;
             handler.sendMessage(message);
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();

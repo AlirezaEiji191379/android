@@ -49,6 +49,12 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void handleMessage(@NonNull Message msg) {
             super.handleMessage(msg);
+            if(msg.what==0){
+                String toast="please connect to internet for fetching more data!";
+                Toast.makeText(MainActivity.this,toast, LENGTH_LONG).show();
+                findViewById(R.id.viewBtn).setEnabled(true);
+                return;
+            }
             TextView textView=(TextView) findViewById(R.id.textView);
             CharSequence lastText= textView.getText();
             textView.setText("");

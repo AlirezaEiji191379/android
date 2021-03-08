@@ -36,6 +36,8 @@ import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 public class ApiRequest{
 
@@ -43,6 +45,7 @@ public class ApiRequest{
     private final String API_KEY_Candles="80A71684-F679-44B2-BBE0-A0C9B7E49597";
     private final String urlForData="https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest";
     private final String urlForImage="https://pro-api.coinmarketcap.com/v1/cryptocurrency/info";
+    private final String urlForCandle="https://rest.coinapi.io/v1/ohlcv/";
     private Context context;
     private Handler handler;
     private boolean done=true;
@@ -95,11 +98,18 @@ public class ApiRequest{
         int cacheSize = 10 * 1024 * 1024; // 10 MiB
         Cache cache = new Cache(httpCacheDirectory, cacheSize);
         OkHttpClient httpClient= new OkHttpClient.Builder()
-                .addNetworkInterceptor(new CacheInterceptor())
+                .addNetworkInterceptor(new CacheInterceptor(this.context))
                 .cache(cache)
                 .build();
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(this.urlForData+"/")
+                .client(httpClient)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+
         httpClient.newCall(request).enqueue(new Callback() {
             private void extractResponseFromRequest(Response response){
+
                done=true;
                String resp="";
                 try {
@@ -129,6 +139,9 @@ public class ApiRequest{
             }
             @Override
             public void onFailure(Call call, IOException e) {
+                Message message=Message.obtain();
+                message.what=0;
+                handler.sendMessage(message);
             }
             @Override
             public void onResponse(Call call, Response response) throws IOException {
@@ -152,8 +165,13 @@ public class ApiRequest{
         int cacheSize = 10 * 1024 * 1024; // 10 MiB
         Cache cache = new Cache(httpCacheDirectory, cacheSize);
         OkHttpClient httpClient= new OkHttpClient.Builder()
-                .addNetworkInterceptor(new CacheInterceptor())
+                .addNetworkInterceptor(new CacheInterceptor(this.context))
                 .cache(cache)
+                .build();
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(this.urlForImage+"/")
+                .client(httpClient)
+                .addConverterFactory(GsonConverterFactory.create())
                 .build();
         httpClient.newCall(request).enqueue(new Callback() {
             private void extractResponseFromRequest(Response response){
@@ -194,7 +212,7 @@ public class ApiRequest{
         int cacheSize = 10 * 1024 * 1024; // 10 MiB
         Cache cache = new Cache(httpCacheDirectory, cacheSize);
         OkHttpClient httpClient= new OkHttpClient.Builder()
-                .addNetworkInterceptor(new CacheInterceptor())
+                .addNetworkInterceptor(new CacheInterceptor(this.context))
                 .cache(cache)
                 .build();
 
@@ -222,7 +240,7 @@ public class ApiRequest{
 
         }
 
-        HttpUrl.Builder urlBuilder = HttpUrl.parse("https://rest.coinapi.io/v1/ohlcv/".concat(symbol).concat("/USD/history?".concat(miniUrl)))
+        HttpUrl.Builder urlBuilder = HttpUrl.parse(this.urlForCandle.concat(symbol).concat("/USD/history?".concat(miniUrl)))
                 .newBuilder();
 
         String url = urlBuilder.build().toString();

@@ -46,6 +46,7 @@ public class CoinCandleController implements Runnable {
             }
             Message message=Message.obtain();
             message.obj=all;
+            message.what=1;
             handler.sendMessage(message);
 
         } catch (InterruptedException e) {
