@@ -238,10 +238,10 @@ public class ApiRequest{
                     JSONArray jsonArray=new JSONArray(resp);
                     for(int i=0;i<jsonArray.length();i++){
                         JSONObject model=jsonArray.getJSONObject(i);
-                        double open=model.getDouble("price_open");
-                        double high=model.getDouble("price_high");
-                        double low=model.getDouble("price_low");
-                        double close=model.getDouble("price_close");
+                        double open=Double.parseDouble(String.valueOf(model.get("price_open")));
+                        double high=Double.parseDouble(String.valueOf(model.get("price_high")));
+                        double low=Double.parseDouble(String.valueOf(model.get("price_low")));
+                        double close=Double.parseDouble(String.valueOf(model.get("price_close")));
                         Candle candle=new Candle(symbol,open,close,high,low);
                         allCandles.put(candle);
                         Log.i("open::", String.valueOf(open));
