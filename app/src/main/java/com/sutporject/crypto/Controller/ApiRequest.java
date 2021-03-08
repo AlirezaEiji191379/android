@@ -12,6 +12,7 @@ import androidx.annotation.RequiresApi;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.RequestBuilder;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
+import com.bumptech.glide.request.RequestOptions;
 import com.sutporject.crypto.model.Candle;
 import com.sutporject.crypto.model.Crypto;
 import org.json.JSONArray;
@@ -80,13 +81,6 @@ public class ApiRequest{
     }
 
     public synchronized void  doGetRequestForCryptoData(int start, int limit) throws IOException{
-        while (done==false){
-            try {
-                wait();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
         this.done=false;
         allFetchedCrypto.clear();
         HttpUrl.Builder urlBuilder = HttpUrl.parse(this.urlForData).newBuilder();
@@ -107,9 +101,10 @@ public class ApiRequest{
         httpClient.newCall(request).enqueue(new Callback() {
             private void extractResponseFromRequest(Response response){
                done=true;
+               String resp="";
                 try {
-                    String resp=response.body().string();
-                    Log.i("resposne", resp);
+                    resp=response.body().string();
+                    Log.i("responses", resp);
                     JSONObject jsonResponse=new JSONObject(resp);
                     JSONArray data=  jsonResponse.getJSONArray("data");
                     for(int i=0;i<data.length();i++){
@@ -119,43 +114,31 @@ public class ApiRequest{
                         JSONObject usd=quote.getJSONObject("USD");
                         String name= (String) model.get("name");
                         String symbol=(String) model.get("symbol");
+                        Log.i("responses", symbol);
                         double price= (double) usd.get("price");
-                        double percentage_change_1h=(double) usd.get("percent_change_1h");
-                        double percentage_change_24h=(double) usd.get("percent_change_24h");
-                        double percentage_change_7d=(double) usd.get("percent_change_7d");
-                        Log.i("main90", String.valueOf(id));
+                        double percentage_change_1h=Double.parseDouble(String.valueOf(usd.get("percent_change_1h")));
+                        double percentage_change_24h=Double.parseDouble (String.valueOf(usd.get("percent_change_24h")));
+                        double percentage_change_7d=Double.parseDouble(String.valueOf(usd.get("percent_change_7d")));
                         Crypto newCrypto=new Crypto(id,name,symbol,price,percentage_change_1h,percentage_change_7d,percentage_change_24h);
                         allFetchedCrypto.put(newCrypto);
                     }
+                    Log.i("responses", "-------------------------------------------");
                 } catch (IOException | JSONException | InterruptedException e) {
                     e.printStackTrace();
                 }
             }
             @Override
             public void onFailure(Call call, IOException e) {
-                Log.i("mainX", "failed shod dadash");
-                Message message=Message.obtain();
-                message.obj="the connection was interrupted!";
-                handler.sendMessage(message);
             }
             @Override
             public void onResponse(Call call, Response response) throws IOException {
+                //Log.i("responseXXXXX", response.body().string());
                 extractResponseFromRequest(response);
             }
         });
-        while (done==false){
-            notifyAll();
-        }
     }
 
     public synchronized void doGetRequestForCryptoLogo(String id){
-        while (done==false){
-            try {
-                wait();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
         this.done=false;
         allFetchedDrawables.clear();
         HttpUrl.Builder urlBuilder = HttpUrl.parse(this.urlForImage).newBuilder();
@@ -174,20 +157,19 @@ public class ApiRequest{
                 .build();
         httpClient.newCall(request).enqueue(new Callback() {
             private void extractResponseFromRequest(Response response){
+                RequestOptions myOptions = new RequestOptions()
+                        .override(50, 50);
                 done=true;
                 try {
                     String resp=response.body().string();
-                    Log.i("resposne", resp);
                     JSONObject jsonResponse=new JSONObject(resp);
                     JSONObject data=  jsonResponse.getJSONObject("data");
-                    Log.i("data: ", String.valueOf(data));
-                    //ArrayList<Crypto> allCrypto=new ArrayList<>();
                     String [] tokenize=id.split(",");
                     for(int i=0;i<tokenize.length;i++){
                         JSONObject model=data.getJSONObject(tokenize[i]);
                         String logoUrl= (String) model.get("logo");
-                        allFetchedDrawables.put(Glide.with(context).load(logoUrl).diskCacheStrategy(DiskCacheStrategy.RESOURCE));
-                        Log.i("data: ", logoUrl);
+                        allFetchedDrawables.put(Glide.with(context).asBitmap().apply(myOptions).load(logoUrl).diskCacheStrategy(DiskCacheStrategy.RESOURCE));
+                        Log.i("logo Url:",logoUrl);
                     }
                 } catch (IOException | JSONException | InterruptedException e) {
                     e.printStackTrace();
@@ -205,9 +187,6 @@ public class ApiRequest{
                 extractResponseFromRequest(response);
             }
         });
-        while (done==false){
-            notifyAll();
-        }
     }
 
     public synchronized void doGetRequestForCandles(String symbol, Range range) {
@@ -282,8 +261,5 @@ public class ApiRequest{
                 extractCandles(response);
             }
         });
-//        while (done==false){
-//            notifyAll();
-//        }
     }
 }
