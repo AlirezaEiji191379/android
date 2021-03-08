@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="8dp">
+
+    <ImageView
+        android:id="@+id/appIconIV"
+        android:layout_width="60dp"
+        android:layout_height="60dp" />
+
+    <TextView
+        android:id="@+id/symbolTxt"
+        android:text="Symbol"
+        android:textSize="20sp"
+        android:layout_marginTop="8dp"
+        android:maxLines="1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_toRightOf="@+id/appIconIV"
+        android:layout_toEndOf="@+id/appIconIV"
+        android:layout_marginStart="15dp"
+        />
+
+    <TextView
+        android:id="@+id/nameTxt"
+        android:text="name"
+        android:textSize="20sp"
+        android:layout_marginTop="8dp"
+        android:maxLines="1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_toRightOf="@+id/symbolTxt"
+        android:layout_toEndOf="@+id/symbolTxt"
+        android:layout_marginStart="5dp"
+        />
+    <TextView
+        android:id="@+id/priceLabel"
+        android:layout_marginTop="12dp"
+        android:layout_marginRight="100dp"
+        android:layout_alignParentRight="true"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:maxLines="1"
+        android:text="Price:"
+        android:textSize="15dp" />
+
+    <TextView
+        android:id="@+id/price"
+        android:layout_marginTop="15dp"
+        android:layout_alignParentRight="true"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:maxLines="1"
+        android:text="Prc"
+        android:textSize="10dp" />
+
+    <TextView
+        android:id="@+id/oneLabel"
+        android:layout_toRightOf="@id/appIconIV"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:maxLines="1"
+        android:text="1HR:"
+        android:layout_marginLeft="5dp"
+        android:layout_marginTop="45dp"
+        android:textSize="15dp"
+        android:textStyle="bold"/>
+
+    <TextView
+        android:id="@+id/one"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toRightOf="@id/oneLabel"
+        android:maxLines="1"
+        android:text="prc"
+        android:textColor="#4CAF50"
+        android:layout_marginTop="48dp"
+        android:textSize="12dp" />
+
+    <TextView
+        android:id="@+id/twofourLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="5dp"
+        android:layout_toRightOf="@id/one"
+        android:maxLines="1"
+        android:text="24HR:"
+        android:layout_marginTop="45dp"
+        android:textSize="15dp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/twofour"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toRightOf="@id/twofourLabel"
+        android:maxLines="1"
+        android:text="prc"
+        android:textColor="#4CAF50"
+        android:layout_marginTop="48dp"
+        android:textSize="12dp"
+        />
+
+    <TextView
+        android:id="@+id/weekLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="5dp"
+        android:layout_toRightOf="@id/twofour"
+        android:maxLines="1"
+        android:text="WEEK:"
+        android:layout_marginTop="45dp"
+        android:textSize="15dp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/week"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toRightOf="@id/weekLabel"
+        android:maxLines="1"
+        android:text="prc"
+        android:textColor="#4CAF50"
+        android:layout_marginTop="48dp"
+        android:textSize="12dp"
+        />
+
+</RelativeLayout>

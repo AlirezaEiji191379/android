@@ -1,15 +1,11 @@
 package com.sutporject.crypto;
 
 import android.content.Intent;
-import android.graphics.drawable.Drawable;
-import android.media.Image;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
 
-import com.bumptech.glide.Glide;
 import com.bumptech.glide.RequestBuilder;
-import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.sutporject.crypto.Controller.ApiRequest;
 import com.sutporject.crypto.Controller.CoinMarketController;
 import com.sutporject.crypto.model.Crypto;
@@ -17,22 +13,18 @@ import com.sutporject.crypto.model.Crypto;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
-import android.text.method.ScrollingMovementMethod;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.Button;
-import android.widget.ImageView;
-import android.widget.TextView;
+import android.widget.ListView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -44,32 +36,51 @@ public class MainActivity extends AppCompatActivity {
     private final int limitOfCoins=3;
     private ApiRequest apiRequest;
     private ExecutorService executorService;
-    //https://s2.coinmarketcap.com/static/img/coins/64x64/1.png
+    private ListView lView;
+    private Adapter listAdapter;
+    private SwipeRefreshLayout refreshLayout;
+
     Handler handler=new Handler(Looper.getMainLooper()){
         @Override
         public void handleMessage(@NonNull Message msg) {
             super.handleMessage(msg);
-            if(msg.what==0){
-                String toast="please connect to internet for fetching more data!";
-                Toast.makeText(MainActivity.this,toast, LENGTH_LONG).show();
-                findViewById(R.id.viewBtn).setEnabled(true);
-                return;
-            }
-            TextView textView=(TextView) findViewById(R.id.textView);
-            CharSequence lastText= textView.getText();
-            textView.setText("");
-            textView.setMovementMethod(new ScrollingMovementMethod());
             ArrayList<Object> obj= (ArrayList<Object>) msg.obj;
             ArrayList<Crypto> allCrypto= (ArrayList<Crypto>) obj.get(0);
             ArrayList<RequestBuilder> allRbs= (ArrayList<RequestBuilder>) obj.get(1);
-            for(int i=0;i<allCrypto.size();i++){
-                lastText=lastText+"\n\n"+allCrypto.get(i).toString();
+
+            lView = (ListView) findViewById(R.id.list);
+
+            ArrayList<String> symbols = new ArrayList<>();
+            ArrayList<String> names = new ArrayList<>();
+            ArrayList<String> prices = new ArrayList<>();
+            ArrayList<String> hour = new ArrayList<>();
+            ArrayList<String> day = new ArrayList<>();
+            ArrayList<String> week = new ArrayList<>();
+            ArrayList<RequestBuilder> icons = new ArrayList<>();
+
+
+            for (int i = 0; i < allCrypto.size(); i++) {
+                Crypto crypto = allCrypto.get(i);
+                symbols.add(crypto.getSymbol());
+                names.add(crypto.getName());
+                prices.add(Double.toString(crypto.getPrice()));
+                hour.add(Double.toString(crypto.getChangesSinceLastHour()));
+                day.add(Double.toString(crypto.getChangesSinceLastDay()));
+                week.add(Double.toString(crypto.getChangesSinceLastWeek()));
+                icons.add(allRbs.get(i));
             }
-            allRbs.get(0).into((ImageView) findViewById(R.id.imageView));
-            allRbs.get(1).into((ImageView) findViewById(R.id.imageView2));
-            allRbs.get(2).into((ImageView) findViewById(R.id.imageView3));
-            textView.setText(lastText);
+
+            if(listAdapter == null || refreshLayout.isRefreshing())
+                listAdapter = new Adapter(MainActivity.this, symbols, names, icons,prices,hour,day,week);
+            else
+                listAdapter.addItems(symbols, names, icons,prices,hour,day,week);
+
+            lView.setAdapter(listAdapter);
+
             findViewById(R.id.viewBtn).setEnabled(true);
+            if(refreshLayout.isRefreshing())
+                Toast.makeText(getApplicationContext(),"Updated!", LENGTH_LONG).show();
+            refreshLayout.setRefreshing(false);
         }
     };
 
@@ -80,8 +91,6 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         this.starIndexOfCoins=1;
-        //ImageView imageView=(ImageView) findViewById(R.id.imageView);
-        //Glide.with(this).load("https://s2.coinmarketcap.com/static/img/coins/64x64/1.png").diskCacheStrategy(DiskCacheStrategy.RESOURCE).into(imageView);
         apiRequest=new ApiRequest(this.handler,this);
         this.executorService= Executors.newCachedThreadPool();
         ///
@@ -89,6 +98,19 @@ public class MainActivity extends AppCompatActivity {
         ///
         this.executorService.execute(cmc);
         //executorService.shutdown();
+
+        refreshLayout = findViewById(R.id.swiperefresh);
+        refreshLayout.setOnRefreshListener(
+                new SwipeRefreshLayout.OnRefreshListener() {
+                    @Override
+                    public void onRefresh() {
+                        if(executorService.isTerminated()) executorService=Executors.newCachedThreadPool();
+                        CoinMarketController cmc=new CoinMarketController(getApplicationContext(),apiRequest,handler,1,starIndexOfCoins+limitOfCoins-1);
+                        executorService.execute(cmc);
+                    }
+                }
+        );
+
     }
 
     @Override
