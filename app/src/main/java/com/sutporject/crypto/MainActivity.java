@@ -44,6 +44,11 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void handleMessage(@NonNull Message msg) {
             super.handleMessage(msg);
+            if(msg.what==0){
+                Toast.makeText(MainActivity.this,"please connect to internet for fetching more data",LENGTH_LONG).show();
+                findViewById(R.id.viewBtn).setEnabled(true);
+                return;
+            }
             ArrayList<Object> obj= (ArrayList<Object>) msg.obj;
             ArrayList<Crypto> allCrypto= (ArrayList<Crypto>) obj.get(0);
             ArrayList<RequestBuilder> allRbs= (ArrayList<RequestBuilder>) obj.get(1);
