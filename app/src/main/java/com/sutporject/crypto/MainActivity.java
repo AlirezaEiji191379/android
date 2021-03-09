@@ -33,7 +33,7 @@ import static android.widget.Toast.LENGTH_LONG;
 public class MainActivity extends AppCompatActivity {
 
     private int starIndexOfCoins;
-    private final int limitOfCoins=3;
+    private final int limitOfCoins=10;
     private ApiRequest apiRequest;
     private ExecutorService executorService;
     private ListView lView;
@@ -45,8 +45,8 @@ public class MainActivity extends AppCompatActivity {
         public void handleMessage(@NonNull Message msg) {
             super.handleMessage(msg);
             if(msg.what==0){
-                Toast.makeText(MainActivity.this,"please connect to internet for fetching more data",LENGTH_LONG).show();
                 findViewById(R.id.viewBtn).setEnabled(true);
+                Toast.makeText(MainActivity.this,"please connect to internet for fetching more data",LENGTH_LONG).show();
                 return;
             }
             ArrayList<Object> obj= (ArrayList<Object>) msg.obj;
@@ -109,9 +109,16 @@ public class MainActivity extends AppCompatActivity {
                 new SwipeRefreshLayout.OnRefreshListener() {
                     @Override
                     public void onRefresh() {
-                        if(executorService.isTerminated()) executorService=Executors.newCachedThreadPool();
-                        CoinMarketController cmc=new CoinMarketController(getApplicationContext(),apiRequest,handler,1,starIndexOfCoins+limitOfCoins-1);
-                        executorService.execute(cmc);
+                        if(checkDeviceConnection()==false) return;
+                        apiRequest.setClearCache(true);
+                        int numberOfThreads=(starIndexOfCoins+limitOfCoins-1)/limitOfCoins;
+                        starIndexOfCoins=1;
+                        for(int i=0;i<numberOfThreads;i++,starIndexOfCoins=starIndexOfCoins+limitOfCoins){
+                            if(executorService.isTerminated()) executorService=Executors.newCachedThreadPool();
+                            CoinMarketController cmc=new CoinMarketController(getApplicationContext(),apiRequest,handler,starIndexOfCoins,limitOfCoins);
+                            executorService.execute(cmc);
+                        }
+                        findViewById(R.id.viewBtn).setEnabled(false);
                     }
                 }
         );
@@ -121,17 +128,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onResume() {
         super.onResume();
-        ConnectivityManager cm = (ConnectivityManager) this.getSystemService(CONNECTIVITY_SERVICE);///(ConnectivityManager) this.getSystemService(CONNECTIVITY_SERVICE);
-        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
-        boolean isConnected = activeNetwork != null &&
-                activeNetwork.isConnectedOrConnecting();
-        String status=null;
-        if(isConnected==true){
-            status="you are connected!";
-        }else{
-            status="you are not connected!";
-        }
-        Toast.makeText(this,status, LENGTH_LONG).show();
     }
 
     public void btnClicked(View view){
@@ -141,7 +137,6 @@ public class MainActivity extends AppCompatActivity {
         this.starIndexOfCoins=this.starIndexOfCoins+this.limitOfCoins;
         CoinMarketController cmc=new CoinMarketController(this,apiRequest,this.handler,this.starIndexOfCoins,this.limitOfCoins);
         this.executorService.execute(cmc);
-//        this.executorService.shutdown();
     }
 
     public void nextPageClicked(View view){
@@ -169,6 +164,21 @@ public class MainActivity extends AppCompatActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private boolean checkDeviceConnection(){
+        ConnectivityManager cm = (ConnectivityManager) this.getSystemService(CONNECTIVITY_SERVICE);///(ConnectivityManager) this.getSystemService(CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+        boolean isConnected = activeNetwork != null &&
+                activeNetwork.isConnectedOrConnecting();
+        String status=null;
+        if(isConnected==true){
+            //status="you are connected!";
+        }else{
+            status="you are not connected!";
+        }
+        Toast.makeText(this,status, LENGTH_LONG).show();
+        return isConnected;
     }
 
 

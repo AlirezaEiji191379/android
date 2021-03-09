@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 
 import okhttp3.Cache;
 import okhttp3.Call;
@@ -51,7 +52,7 @@ public class ApiRequest{
     private boolean done=true;
     private ArrayBlockingQueue<Crypto> allFetchedCrypto;////must be corrected!
     private ArrayBlockingQueue<RequestBuilder> allFetchedDrawables;////must be corrected!
-
+    private boolean clearCache;
     private ArrayBlockingQueue<Candle> allCandles;
 
 
@@ -69,22 +70,67 @@ public class ApiRequest{
     public ApiRequest(Handler handler,Context context) {
         this.handler = handler;
         this.context=context;
+        allFetchedCrypto=new ArrayBlockingQueue<>(10);
+        allFetchedDrawables=new ArrayBlockingQueue<>(10);
     }
 
     public void setAllCandles(ArrayBlockingQueue<Candle> allCandles) {
         this.allCandles = allCandles;
     }
 
-    public void setAllFetchedCrypto(ArrayBlockingQueue<Crypto> allFetchedCrypto) {
-        this.allFetchedCrypto = allFetchedCrypto;
+    public void setClearCache(boolean clearCache) {
+        this.clearCache = clearCache;
     }
+//
+//    public void setAllFetchedCrypto(ArrayBlockingQueue<Crypto> allFetchedCrypto) {
+//        this.allFetchedCrypto = allFetchedCrypto;
+//    }
+//
+//    public void setAllFetchedDrawables(ArrayBlockingQueue<RequestBuilder> allFetchedDrawables) {
+//        this.allFetchedDrawables = allFetchedDrawables;
+//    }
 
-    public void setAllFetchedDrawables(ArrayBlockingQueue<RequestBuilder> allFetchedDrawables) {
-        this.allFetchedDrawables = allFetchedDrawables;
-    }
-
-    public synchronized void  doGetRequestForCryptoData(int start, int limit) throws IOException{
+    public synchronized ArrayList<Object> fetchDataFromCoinMarket(int start, int limit) throws IOException, InterruptedException {
+        while (this.done==false){
+            try {
+                wait();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
         this.done=false;
+        if(this.clearCache==true){
+            CacheInterceptor.deleteCache(context);
+            this.clearCache=false;
+        }
+        Log.i("main","thread "+ Thread.currentThread().getName()+" started!");
+        this.doGetRequestForCryptoData(start,limit);
+        ArrayList<Crypto> allCryptos=new ArrayList<>();
+        ArrayList<RequestBuilder>allRbs=new ArrayList<>();
+        for(int i=0;i<limit;i++){
+            allCryptos.add(allFetchedCrypto.take());
+        }
+        StringBuilder id=new StringBuilder("");
+        for(int i=0;i<allCryptos.size();i++){
+            id.append(allCryptos.get(i).getId()+",");
+        }
+        id.deleteCharAt(id.lastIndexOf(","));
+        this.doGetRequestForCryptoLogo(id.toString());
+        for(int i=0;i<limit;i++){
+            allRbs.add(allFetchedDrawables.take());
+        }
+        ArrayList<Object> objects=new ArrayList<>();
+        objects.add(allCryptos);
+        objects.add(allRbs);
+        while (this.done==false){
+            Log.i("main","thread "+ Thread.currentThread().getName()+" is inviting others!");
+            notifyAll();
+        }
+        Log.i("main","thread "+ Thread.currentThread().getName()+" ednded!");
+        return objects;
+    }
+
+    private synchronized void  doGetRequestForCryptoData(int start, int limit) throws IOException{
         allFetchedCrypto.clear();
         HttpUrl.Builder urlBuilder = HttpUrl.parse(this.urlForData).newBuilder();
         urlBuilder.addQueryParameter("limit", String.valueOf(limit));
@@ -109,12 +155,11 @@ public class ApiRequest{
 
         httpClient.newCall(request).enqueue(new Callback() {
             private void extractResponseFromRequest(Response response){
-
-               done=true;
                String resp="";
                 try {
+                    Log.i("main","thread "+ Thread.currentThread().getId()+" started!");
                     resp=response.body().string();
-                    Log.i("responses", resp);
+                    //Log.i("responses", resp);
                     JSONObject jsonResponse=new JSONObject(resp);
                     JSONArray data=  jsonResponse.getJSONArray("data");
                     for(int i=0;i<data.length();i++){
@@ -124,7 +169,7 @@ public class ApiRequest{
                         JSONObject usd=quote.getJSONObject("USD");
                         String name= (String) model.get("name");
                         String symbol=(String) model.get("symbol");
-                        Log.i("responses", symbol);
+                        //Log.i("responses", symbol);
                         double price= Double.parseDouble(String.valueOf(usd.get("price")));
                         double percentage_change_1h=Double.parseDouble(String.valueOf(usd.get("percent_change_1h")));
                         double percentage_change_24h=Double.parseDouble (String.valueOf(usd.get("percent_change_24h")));
@@ -132,7 +177,8 @@ public class ApiRequest{
                         Crypto newCrypto=new Crypto(id,name,symbol,price,percentage_change_1h,percentage_change_7d,percentage_change_24h);
                         allFetchedCrypto.put(newCrypto);
                     }
-                    Log.i("responses", "-------------------------------------------");
+                    Log.i("main","thread "+ Thread.currentThread().getId()+" is ended fetching data!");
+                    //Log.i("responses", "-------------------------------------------");
                 } catch (IOException | JSONException | InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -151,8 +197,8 @@ public class ApiRequest{
         });
     }
 
-    public synchronized void doGetRequestForCryptoLogo(String id){
-        this.done=false;
+    private synchronized void doGetRequestForCryptoLogo(String id){
+        Log.i("main","thread "+ Thread.currentThread().getName()+" is going to fetch logo!");
         allFetchedDrawables.clear();
         HttpUrl.Builder urlBuilder = HttpUrl.parse(this.urlForImage).newBuilder();
         urlBuilder.addQueryParameter("id", String.valueOf(id));
@@ -175,9 +221,9 @@ public class ApiRequest{
                 .build();
         httpClient.newCall(request).enqueue(new Callback() {
             private void extractResponseFromRequest(Response response){
+                Log.i("main","thread "+ Thread.currentThread().getId()+" started!");
                 RequestOptions myOptions = new RequestOptions()
                         .override(50, 50);
-                done=true;
                 try {
                     String resp=response.body().string();
                     JSONObject jsonResponse=new JSONObject(resp);
@@ -187,15 +233,18 @@ public class ApiRequest{
                         JSONObject model=data.getJSONObject(tokenize[i]);
                         String logoUrl= (String) model.get("logo");
                         allFetchedDrawables.put(Glide.with(context).asBitmap().apply(myOptions).load(logoUrl).diskCacheStrategy(DiskCacheStrategy.RESOURCE));
-                        Log.i("logo Url:",logoUrl);
+                        //Log.i("logo Url:",logoUrl);
                     }
+                    Log.i("main","thread "+ Thread.currentThread().getId()+" ended fetching logos!");
+                    done=true;
                 } catch (IOException | JSONException | InterruptedException e) {
+                    done=true;
                     e.printStackTrace();
                 }
             }
             @Override
             public void onFailure(Call call, IOException e) {
-                Log.i("mainX", "failed shod dadash");
+                //Log.i("mainX", "failed shod dadash");
                 Message message=Message.obtain();
                 message.obj="the connection was interrupted!";
                 handler.sendMessage(message);
@@ -221,7 +270,7 @@ public class ApiRequest{
 
         SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
         Date date = new Date();
-        Log.i("datte::", String.valueOf(formatter.format(date)));
+        //Log.i("datte::", String.valueOf(formatter.format(date)));
         switch (range) {
 
             case weekly:
@@ -262,7 +311,7 @@ public class ApiRequest{
                         double close=Double.parseDouble(String.valueOf(model.get("price_close")));
                         Candle candle=new Candle(symbol,open,close,high,low);
                         allCandles.put(candle);
-                        Log.i("open::", String.valueOf(open));
+                       // Log.i("open::", String.valueOf(open));
                     }
                 } catch (IOException | JSONException | InterruptedException e) {
                     e.printStackTrace();
@@ -280,4 +329,7 @@ public class ApiRequest{
             }
         });
     }
+
+
+
 }
