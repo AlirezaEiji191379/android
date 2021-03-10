@@ -42,7 +42,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class ApiRequest{
 
-    private final String API_KEY_CoinMarket="b7338e0c-e7d6-484c-ade8-77c577cb7773";
+    private final String API_KEY_CoinMarket="207bf886-2cf9-4acf-b49c-da5aacb817c5";
     private final String API_KEY_Candles="80A71684-F679-44B2-BBE0-A0C9B7E49597";
     private final String urlForData="https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest";
     private final String urlForImage="https://pro-api.coinmarketcap.com/v1/cryptocurrency/info";
@@ -54,7 +54,7 @@ public class ApiRequest{
     private ArrayBlockingQueue<RequestBuilder> allFetchedDrawables;////must be corrected!
     private boolean clearCache;
     private ArrayBlockingQueue<Candle> allCandles;
-
+    private ArrayBlockingQueue<Boolean> success=new ArrayBlockingQueue<Boolean>(1);
 
     public enum Range {
         weekly(7),
@@ -103,12 +103,21 @@ public class ApiRequest{
             CacheInterceptor.deleteCache(context);
             this.clearCache=false;
         }
-        Log.i("main","thread "+ Thread.currentThread().getName()+" started!");
+        Log.i("main","thread "+ Thread.currentThread().getName()+" is stated!");
         this.doGetRequestForCryptoData(start,limit);
+
+        boolean b=success.take();
+        if(b==false){
+            this.done=true;
+            notifyAll();
+            return null;
+        }
+
         ArrayList<Crypto> allCryptos=new ArrayList<>();
         ArrayList<RequestBuilder>allRbs=new ArrayList<>();
         for(int i=0;i<limit;i++){
-            allCryptos.add(allFetchedCrypto.take());
+            Crypto x=allFetchedCrypto.take();
+            allCryptos.add(x);
         }
         StringBuilder id=new StringBuilder("");
         for(int i=0;i<allCryptos.size();i++){
@@ -116,6 +125,12 @@ public class ApiRequest{
         }
         id.deleteCharAt(id.lastIndexOf(","));
         this.doGetRequestForCryptoLogo(id.toString());
+        b=success.take();
+        if(b==false){
+            this.done=true;
+            notifyAll();
+            return null;
+        }
         for(int i=0;i<limit;i++){
             allRbs.add(allFetchedDrawables.take());
         }
@@ -123,10 +138,8 @@ public class ApiRequest{
         objects.add(allCryptos);
         objects.add(allRbs);
         while (this.done==false){
-            Log.i("main","thread "+ Thread.currentThread().getName()+" is inviting others!");
             notifyAll();
         }
-        Log.i("main","thread "+ Thread.currentThread().getName()+" ednded!");
         return objects;
     }
 
@@ -141,7 +154,7 @@ public class ApiRequest{
                 .addHeader("X-CMC_PRO_API_KEY",this.API_KEY_CoinMarket)
                 .build();
         File httpCacheDirectory = new File(context.getCacheDir(), "http-cache");
-        int cacheSize = 10 * 1024 * 1024; // 10 MiB
+        int cacheSize = 15 * 1024 * 1024; // 10 MiB
         Cache cache = new Cache(httpCacheDirectory, cacheSize);
         OkHttpClient httpClient= new OkHttpClient.Builder()
                 .addNetworkInterceptor(new CacheInterceptor(this.context))
@@ -154,10 +167,10 @@ public class ApiRequest{
                 .build();
 
         httpClient.newCall(request).enqueue(new Callback() {
-            private void extractResponseFromRequest(Response response){
+            private void extractResponseFromRequest(Response response) throws InterruptedException {
+                success.put(true);
                String resp="";
                 try {
-                    Log.i("main","thread "+ Thread.currentThread().getId()+" started!");
                     resp=response.body().string();
                     //Log.i("responses", resp);
                     JSONObject jsonResponse=new JSONObject(resp);
@@ -177,28 +190,31 @@ public class ApiRequest{
                         Crypto newCrypto=new Crypto(id,name,symbol,price,percentage_change_1h,percentage_change_7d,percentage_change_24h);
                         allFetchedCrypto.put(newCrypto);
                     }
-                    Log.i("main","thread "+ Thread.currentThread().getId()+" is ended fetching data!");
-                    //Log.i("responses", "-------------------------------------------");
                 } catch (IOException | JSONException | InterruptedException e) {
                     e.printStackTrace();
                 }
             }
             @Override
             public void onFailure(Call call, IOException e) {
-                Message message=Message.obtain();
-                message.what=0;
-                handler.sendMessage(message);
+                try {
+                    Log.i("main","failed!");
+                    success.put(false);
+                } catch (InterruptedException interruptedException) {
+                    interruptedException.printStackTrace();
+                }
             }
             @Override
             public void onResponse(Call call, Response response) throws IOException {
-                //Log.i("responseXXXXX", response.body().string());
-                extractResponseFromRequest(response);
+                try {
+                    extractResponseFromRequest(response);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
         });
     }
 
     private synchronized void doGetRequestForCryptoLogo(String id){
-        Log.i("main","thread "+ Thread.currentThread().getName()+" is going to fetch logo!");
         allFetchedDrawables.clear();
         HttpUrl.Builder urlBuilder = HttpUrl.parse(this.urlForImage).newBuilder();
         urlBuilder.addQueryParameter("id", String.valueOf(id));
@@ -208,7 +224,7 @@ public class ApiRequest{
                 .addHeader("X-CMC_PRO_API_KEY",this.API_KEY_CoinMarket)
                 .build();
         File httpCacheDirectory = new File(context.getCacheDir(), "http-cache");
-        int cacheSize = 10 * 1024 * 1024; // 10 MiB
+        int cacheSize = 15 * 1024 * 1024; // 10 MiB
         Cache cache = new Cache(httpCacheDirectory, cacheSize);
         OkHttpClient httpClient= new OkHttpClient.Builder()
                 .addNetworkInterceptor(new CacheInterceptor(this.context))
@@ -220,8 +236,8 @@ public class ApiRequest{
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
         httpClient.newCall(request).enqueue(new Callback() {
-            private void extractResponseFromRequest(Response response){
-                Log.i("main","thread "+ Thread.currentThread().getId()+" started!");
+            private void extractResponseFromRequest(Response response) throws InterruptedException {
+                success.put(true);
                 RequestOptions myOptions = new RequestOptions()
                         .override(50, 50);
                 try {
@@ -233,9 +249,8 @@ public class ApiRequest{
                         JSONObject model=data.getJSONObject(tokenize[i]);
                         String logoUrl= (String) model.get("logo");
                         allFetchedDrawables.put(Glide.with(context).asBitmap().apply(myOptions).load(logoUrl).diskCacheStrategy(DiskCacheStrategy.RESOURCE));
-                        //Log.i("logo Url:",logoUrl);
+                        Log.i("logo Url:",logoUrl);
                     }
-                    Log.i("main","thread "+ Thread.currentThread().getId()+" ended fetching logos!");
                     done=true;
                 } catch (IOException | JSONException | InterruptedException e) {
                     done=true;
@@ -244,14 +259,19 @@ public class ApiRequest{
             }
             @Override
             public void onFailure(Call call, IOException e) {
-                //Log.i("mainX", "failed shod dadash");
-                Message message=Message.obtain();
-                message.obj="the connection was interrupted!";
-                handler.sendMessage(message);
+                try {
+                    success.put(false);
+                } catch (InterruptedException interruptedException) {
+                    interruptedException.printStackTrace();
+                }
             }
             @Override
             public void onResponse(Call call, Response response) throws IOException {
-                extractResponseFromRequest(response);
+                try {
+                    extractResponseFromRequest(response);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
         });
     }
