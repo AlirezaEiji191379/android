@@ -98,20 +98,24 @@ public class ApiRequest{
                 e.printStackTrace();
             }
         }
-        Log.i("mainX", context.getCacheDir().getParent());
         this.done=false;
         if(this.clearCache==true){
             CacheInterceptor.deleteCache(context);
             this.clearCache=false;
         }
         this.doGetRequestForCryptoData(start,limit);
+
         boolean b=success.take();
-        if(b==false) return null;
+        if(b==false){
+            this.done=true;
+            notifyAll();
+            return null;
+        }
+        Log.i("main","thread "+ Thread.currentThread().getName()+" is succeed!");
         ArrayList<Crypto> allCryptos=new ArrayList<>();
         ArrayList<RequestBuilder>allRbs=new ArrayList<>();
         for(int i=0;i<limit;i++){
             Crypto x=allFetchedCrypto.take();
-            if(x.getId()==-1) return null;
             allCryptos.add(x);
         }
         StringBuilder id=new StringBuilder("");
@@ -121,7 +125,11 @@ public class ApiRequest{
         id.deleteCharAt(id.lastIndexOf(","));
         this.doGetRequestForCryptoLogo(id.toString());
         b=success.take();
-        if(b==false) return null;
+        if(b==false){
+            this.done=true;
+            notifyAll();
+            return null;
+        }
         for(int i=0;i<limit;i++){
             allRbs.add(allFetchedDrawables.take());
         }
@@ -160,10 +168,8 @@ public class ApiRequest{
         httpClient.newCall(request).enqueue(new Callback() {
             private void extractResponseFromRequest(Response response) throws InterruptedException {
                 success.put(true);
-               Log.i("cache","i am caching from data");
                String resp="";
                 try {
-                    Log.i("main","thread "+ Thread.currentThread().getId()+" started!");
                     resp=response.body().string();
                     //Log.i("responses", resp);
                     JSONObject jsonResponse=new JSONObject(resp);
@@ -183,8 +189,6 @@ public class ApiRequest{
                         Crypto newCrypto=new Crypto(id,name,symbol,price,percentage_change_1h,percentage_change_7d,percentage_change_24h);
                         allFetchedCrypto.put(newCrypto);
                     }
-                    Log.i("main","thread "+ Thread.currentThread().getId()+" is ended fetching data!");
-                    //Log.i("responses", "-------------------------------------------");
                 } catch (IOException | JSONException | InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -209,7 +213,6 @@ public class ApiRequest{
     }
 
     private synchronized void doGetRequestForCryptoLogo(String id){
-        Log.i("main","thread "+ Thread.currentThread().getName()+" is going to fetch logo!");
         allFetchedDrawables.clear();
         HttpUrl.Builder urlBuilder = HttpUrl.parse(this.urlForImage).newBuilder();
         urlBuilder.addQueryParameter("id", String.valueOf(id));
@@ -232,7 +235,6 @@ public class ApiRequest{
                 .build();
         httpClient.newCall(request).enqueue(new Callback() {
             private void extractResponseFromRequest(Response response) throws InterruptedException {
-                Log.i("main","thread "+ Thread.currentThread().getId()+" started!");
                 success.put(true);
                 RequestOptions myOptions = new RequestOptions()
                         .override(50, 50);
@@ -247,7 +249,6 @@ public class ApiRequest{
                         allFetchedDrawables.put(Glide.with(context).asBitmap().apply(myOptions).load(logoUrl).diskCacheStrategy(DiskCacheStrategy.RESOURCE));
                         Log.i("logo Url:",logoUrl);
                     }
-                    Log.i("main","thread "+ Thread.currentThread().getId()+" ended fetching logos!");
                     done=true;
                 } catch (IOException | JSONException | InterruptedException e) {
                     done=true;
