@@ -72,8 +72,8 @@ public class CoinMarketController implements Runnable{
     @Override
     public void run() {
         try {
-            Log.i("priority","the thread with "+priority+" is started!");
-            Log.i("priority","the thread is with "+start+" index");
+            Log.i("main","the thread with "+priority+" is started!");
+            Log.i("main","the thread is with "+start+" index");
             this.getDataFromInternet();
         } catch (IOException e) {
             e.printStackTrace();

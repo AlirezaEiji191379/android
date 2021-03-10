@@ -103,6 +103,7 @@ public class ApiRequest{
             CacheInterceptor.deleteCache(context);
             this.clearCache=false;
         }
+        Log.i("main","thread "+ Thread.currentThread().getName()+" is stated!");
         this.doGetRequestForCryptoData(start,limit);
 
         boolean b=success.take();
@@ -111,7 +112,7 @@ public class ApiRequest{
             notifyAll();
             return null;
         }
-        Log.i("main","thread "+ Thread.currentThread().getName()+" is succeed!");
+
         ArrayList<Crypto> allCryptos=new ArrayList<>();
         ArrayList<RequestBuilder>allRbs=new ArrayList<>();
         for(int i=0;i<limit;i++){
@@ -196,6 +197,7 @@ public class ApiRequest{
             @Override
             public void onFailure(Call call, IOException e) {
                 try {
+                    Log.i("main","failed!");
                     success.put(false);
                 } catch (InterruptedException interruptedException) {
                     interruptedException.printStackTrace();

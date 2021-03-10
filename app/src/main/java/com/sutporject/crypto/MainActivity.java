@@ -54,6 +54,8 @@ public class MainActivity extends AppCompatActivity {
             super.handleMessage(msg);
             if(msg.what==0){
                 starIndexOfCoins=starIndexOfCoins-limitOfCoins;
+                if(starIndexOfCoins<0) starIndexOfCoins=1;
+                executorService.shutdown();
                 findViewById(R.id.viewBtn).setEnabled(true);
                 Toast.makeText(MainActivity.this,"please connect to internet for fetching more data",LENGTH_LONG).show();
                 return;
@@ -116,11 +118,18 @@ public class MainActivity extends AppCompatActivity {
                 new SwipeRefreshLayout.OnRefreshListener() {
                     @Override
                     public void onRefresh() {
-                        if(checkDeviceConnection()==false) return;
+                        if(checkDeviceConnection()==false) {
+                            refreshLayout.setRefreshing(false);
+                            return;
+                        }
                         apiRequest.setClearCache(true);
-                        int numberOfThreads=(starIndexOfCoins+limitOfCoins-1)/limitOfCoins;
+                        int numberOfThreads=0;
+                        //int numberOfThreads=(starIndexOfCoins+limitOfCoins-1)/limitOfCoins;
+                        Log.i("main","index of coins "+ starIndexOfCoins);
+                        if(starIndexOfCoins==1) numberOfThreads=1;
+                        else numberOfThreads=(starIndexOfCoins+limitOfCoins-1)/limitOfCoins;
                         starIndexOfCoins=1;
-                        executorService.shutdown();
+                        //executorService.shutdown();
                         executorService= new ThreadPoolExecutor(1,1,0L, TimeUnit.SECONDS,new PriorityBlockingQueue<Runnable>(10, new Comparator<Runnable>() {
                             @Override
                             public int compare(Runnable t1, Runnable t2) {
@@ -129,7 +138,7 @@ public class MainActivity extends AppCompatActivity {
                                 return 0;
                             }
                         }));
-
+                        Log.i("main","number of threads "+ numberOfThreads);
                         for(int i=0;i<numberOfThreads;i++){
                             if(executorService.isTerminated()) executorService= new ThreadPoolExecutor(1,1,0L, TimeUnit.SECONDS,new PriorityBlockingQueue<Runnable>(10, new Comparator<Runnable>() {
                                 @Override
@@ -146,6 +155,7 @@ public class MainActivity extends AppCompatActivity {
                         }
                         findViewById(R.id.viewBtn).setEnabled(false);
                         starIndexOfCoins=starIndexOfCoins-limitOfCoins;
+                        if(starIndexOfCoins<0) starIndexOfCoins=1;
 //                        Log.i("priority2", String.valueOf(starIndexOfCoins));
                     }
                 }
