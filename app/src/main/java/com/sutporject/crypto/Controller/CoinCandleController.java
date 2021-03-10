@@ -12,7 +12,7 @@ import com.sutporject.crypto.model.Candle;
 import java.util.ArrayList;
 import java.util.concurrent.ArrayBlockingQueue;
 
-public class CoinCandleController implements Runnable {
+public class CoinCandleController  implements Runnable {
     private ArrayBlockingQueue<Candle> allCandles;
     private ApiRequest api;
     private Context appCurrentActivity;

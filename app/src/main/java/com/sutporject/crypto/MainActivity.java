@@ -7,6 +7,7 @@ import android.os.Bundle;
 
 import com.bumptech.glide.RequestBuilder;
 import com.sutporject.crypto.Controller.ApiRequest;
+import com.sutporject.crypto.Controller.CoinCandleController;
 import com.sutporject.crypto.Controller.CoinMarketController;
 import com.sutporject.crypto.model.Crypto;
 
@@ -18,6 +19,7 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -25,15 +27,21 @@ import android.widget.ListView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.PriorityBlockingQueue;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import static android.widget.Toast.LENGTH_LONG;
 
 public class MainActivity extends AppCompatActivity {
 
     private int starIndexOfCoins;
-    private final int limitOfCoins=10;
+    private final int limitOfCoins=5;
     private ApiRequest apiRequest;
     private ExecutorService executorService;
     private ListView lView;
@@ -45,6 +53,7 @@ public class MainActivity extends AppCompatActivity {
         public void handleMessage(@NonNull Message msg) {
             super.handleMessage(msg);
             if(msg.what==0){
+                starIndexOfCoins=starIndexOfCoins-limitOfCoins;
                 findViewById(R.id.viewBtn).setEnabled(true);
                 Toast.makeText(MainActivity.this,"please connect to internet for fetching more data",LENGTH_LONG).show();
                 return;
@@ -98,11 +107,9 @@ public class MainActivity extends AppCompatActivity {
         this.starIndexOfCoins=1;
         apiRequest=new ApiRequest(this.handler,this);
         this.executorService= Executors.newCachedThreadPool();
-        ///
         CoinMarketController cmc=new CoinMarketController(this,apiRequest,this.handler,this.starIndexOfCoins,this.limitOfCoins);
-        ///
+        cmc.setPriority(Integer.MAX_VALUE);
         this.executorService.execute(cmc);
-        //executorService.shutdown();
 
         refreshLayout = findViewById(R.id.swiperefresh);
         refreshLayout.setOnRefreshListener(
@@ -113,12 +120,33 @@ public class MainActivity extends AppCompatActivity {
                         apiRequest.setClearCache(true);
                         int numberOfThreads=(starIndexOfCoins+limitOfCoins-1)/limitOfCoins;
                         starIndexOfCoins=1;
-                        for(int i=0;i<numberOfThreads;i++,starIndexOfCoins=starIndexOfCoins+limitOfCoins){
-                            if(executorService.isTerminated()) executorService=Executors.newCachedThreadPool();
+                        executorService.shutdown();
+                        executorService= new ThreadPoolExecutor(1,1,0L, TimeUnit.SECONDS,new PriorityBlockingQueue<Runnable>(10, new Comparator<Runnable>() {
+                            @Override
+                            public int compare(Runnable t1, Runnable t2) {
+                                if(((CoinMarketController) t1).getPriority()>((CoinMarketController) t2).getPriority()) return -1;
+                                else if(((CoinMarketController) t1).getPriority()<((CoinMarketController) t2).getPriority()){return  1;}
+                                return 0;
+                            }
+                        }));
+
+                        for(int i=0;i<numberOfThreads;i++){
+                            if(executorService.isTerminated()) executorService= new ThreadPoolExecutor(1,1,0L, TimeUnit.SECONDS,new PriorityBlockingQueue<Runnable>(10, new Comparator<Runnable>() {
+                                @Override
+                                public int compare(Runnable t1, Runnable t2) {
+                                    if(((CoinMarketController) t1).getPriority()>((CoinMarketController) t2).getPriority()) return -1;
+                                    else if(((CoinMarketController) t1).getPriority()<((CoinMarketController) t2).getPriority()){return  1;}
+                                    return 0;
+                                }
+                            }));
                             CoinMarketController cmc=new CoinMarketController(getApplicationContext(),apiRequest,handler,starIndexOfCoins,limitOfCoins);
+                            cmc.setPriority(numberOfThreads-i);
+                            starIndexOfCoins=starIndexOfCoins+limitOfCoins;
                             executorService.execute(cmc);
                         }
                         findViewById(R.id.viewBtn).setEnabled(false);
+                        starIndexOfCoins=starIndexOfCoins-limitOfCoins;
+//                        Log.i("priority2", String.valueOf(starIndexOfCoins));
                     }
                 }
         );
@@ -131,11 +159,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void btnClicked(View view){
+
         if(view.isEnabled()==false) return;
         view.setEnabled(false);
         if(this.executorService.isTerminated()) this.executorService=Executors.newCachedThreadPool();
         this.starIndexOfCoins=this.starIndexOfCoins+this.limitOfCoins;
         CoinMarketController cmc=new CoinMarketController(this,apiRequest,this.handler,this.starIndexOfCoins,this.limitOfCoins);
+        cmc.setPriority(Integer.MAX_VALUE);
         this.executorService.execute(cmc);
     }
 
@@ -180,8 +210,5 @@ public class MainActivity extends AppCompatActivity {
         Toast.makeText(this,status, LENGTH_LONG).show();
         return isConnected;
     }
-
-
-
-
 }
+

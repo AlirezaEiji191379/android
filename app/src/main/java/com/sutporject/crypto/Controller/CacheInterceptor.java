@@ -25,7 +25,7 @@ public class CacheInterceptor implements Interceptor {
         if(this.checkDeviceConnection()){
 
             CacheControl cacheControl = new CacheControl.Builder()
-                    .maxAge(15, TimeUnit.MINUTES) // 15 minutes cache
+                    .maxAge(30, TimeUnit.MINUTES) // 15 minutes cache
                     .build();
 
             return response.newBuilder()
@@ -51,7 +51,8 @@ public class CacheInterceptor implements Interceptor {
 
     public static void deleteCache(Context context) {
         try {
-            File dir = context.getCacheDir();
+            String directory=context.getCacheDir().getPath()+File.separator+"http-cache";
+            File dir = new File(directory);
             deleteDir(dir);
         } catch (Exception e) { e.printStackTrace();}
     }
