@@ -17,6 +17,26 @@ public class Candle {
         this.low = low;
     }
 
+    public String getSymbol() {
+        return symbol;
+    }
+
+    public double getOpen() {
+        return open;
+    }
+
+    public double getClose() {
+        return close;
+    }
+
+    public double getHigh() {
+        return high;
+    }
+
+    public double getLow() {
+        return low;
+    }
+
     @NonNull
     @Override
     public String toString() {

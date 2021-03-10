@@ -141,6 +141,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void nextPageClicked(View view){
         Intent intent=new Intent(this,candleActivity.class);
+//        intent.putExtra("symbol","btc");
         startActivity(intent);
     }
 
