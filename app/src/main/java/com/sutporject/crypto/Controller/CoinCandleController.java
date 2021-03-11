@@ -41,7 +41,7 @@ public class CoinCandleController  implements Runnable {
             api.setAllCandles(allCandles);
             api.doGetRequestForCandles(symbol, range);
             ArrayList<Candle> all = new ArrayList<>();
-            for (int i = 0; i < 7; i++) {
+            for (int i = 0; i < range.getNumVal(); i++) {
                 all.add(allCandles.take());
             }
             Message message=Message.obtain();
