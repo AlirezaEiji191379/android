@@ -47,14 +47,6 @@ public class CoinMarketController implements Runnable{
         this.priority = priority;
     }
 
-    public boolean checkDeviceConnection(){
-        ConnectivityManager cm = (ConnectivityManager) this.appCurrentActivity.getSystemService(appCurrentActivity.CONNECTIVITY_SERVICE);
-        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
-        boolean isConnected = activeNetwork != null &&
-                activeNetwork.isConnectedOrConnecting();
-        return isConnected;
-    }
-
     private void getDataFromInternet() throws IOException, InterruptedException {
         ArrayList<Object> objects=api.fetchDataFromCoinMarket(start,limit);
         Message message=Message.obtain();

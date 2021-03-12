@@ -28,14 +28,6 @@ public class CoinCandleController  implements Runnable {
         this.allCandles=new ArrayBlockingQueue<>(range.getNumVal());
     }
 
-    public boolean checkDeviceConnection(){
-        ConnectivityManager cm = (ConnectivityManager) this.appCurrentActivity.getSystemService(appCurrentActivity.CONNECTIVITY_SERVICE);
-        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
-        boolean isConnected = activeNetwork != null &&
-                activeNetwork.isConnectedOrConnecting();
-        return isConnected;
-    }
-
     private void getDataFromInternet(){
         try {
             api.setAllCandles(allCandles);
@@ -63,8 +55,6 @@ public class CoinCandleController  implements Runnable {
 
     @Override
     public void run() {
-        if(this.checkDeviceConnection()){
-            this.getDataFromInternet();
-        }
+        this.getDataFromInternet();
     }
 }

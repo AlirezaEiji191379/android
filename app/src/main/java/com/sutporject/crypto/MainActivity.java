@@ -133,7 +133,6 @@ public class MainActivity extends AppCompatActivity {
 
             else {
                 ArrayList<Candle>allCandles= (ArrayList<Candle>) msg.obj;
-
                 chart = popupView.findViewById(R.id.candle_stick_chart);
                 ArrayList<CandleEntry> sticks = new ArrayList<>();
                 if(sevenCandle){
@@ -196,12 +195,9 @@ public class MainActivity extends AppCompatActivity {
                         }
                         apiRequest.setClearCache(true);
                         int numberOfThreads=0;
-                        //int numberOfThreads=(starIndexOfCoins+limitOfCoins-1)/limitOfCoins;
-                        Log.i("main","index of coins "+ starIndexOfCoins);
                         if(starIndexOfCoins==1) numberOfThreads=1;
                         else numberOfThreads=(starIndexOfCoins+limitOfCoins-1)/limitOfCoins;
                         starIndexOfCoins=1;
-                        //executorService.shutdown();
                         executorService= new ThreadPoolExecutor(1,1,0L, TimeUnit.SECONDS,new PriorityBlockingQueue<Runnable>(10, new Comparator<Runnable>() {
                             @Override
                             public int compare(Runnable t1, Runnable t2) {
@@ -210,7 +206,6 @@ public class MainActivity extends AppCompatActivity {
                                 return 0;
                             }
                         }));
-                        Log.i("main","number of threads "+ numberOfThreads);
                         for(int i=0;i<numberOfThreads;i++){
                             if(executorService.isTerminated()) executorService= new ThreadPoolExecutor(1,1,0L, TimeUnit.SECONDS,new PriorityBlockingQueue<Runnable>(10, new Comparator<Runnable>() {
                                 @Override
@@ -228,7 +223,6 @@ public class MainActivity extends AppCompatActivity {
                         findViewById(R.id.viewBtn).setEnabled(false);
                         starIndexOfCoins=starIndexOfCoins-limitOfCoins;
                         if(starIndexOfCoins<0) starIndexOfCoins=1;
-//                        Log.i("priority2", String.valueOf(starIndexOfCoins));
                     }
                 }
         );
@@ -269,7 +263,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void nextPageClicked(View view){
-
+        if(checkDeviceConnection()==false){
+            Toast.makeText(MainActivity.this,"please connect to the internet for fetching more data!",LENGTH_LONG).show();
+            return;
+        }
         lView = (ListView) findViewById(R.id.list);
         int position = lView.getPositionForView(view);
         String popupSymbol = allSymbols.get(position);

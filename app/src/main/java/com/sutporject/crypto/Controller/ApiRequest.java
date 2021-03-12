@@ -43,15 +43,15 @@ import retrofit2.converter.gson.GsonConverterFactory;
 public class ApiRequest{
 
     private final String API_KEY_CoinMarket="207bf886-2cf9-4acf-b49c-da5aacb817c5";
-    private final String API_KEY_Candles="80A71684-F679-44B2-BBE0-A0C9B7E49597";
+    private final String API_KEY_Candles="7EB97426-CB5E-40D4-9840-F60CCE6D3FC7";
     private final String urlForData="https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest";
     private final String urlForImage="https://pro-api.coinmarketcap.com/v1/cryptocurrency/info";
     private final String urlForCandle="https://rest.coinapi.io/v1/ohlcv/";
     private Context context;
     private Handler handler;
     private boolean done=true;
-    private ArrayBlockingQueue<Crypto> allFetchedCrypto;////must be corrected!
-    private ArrayBlockingQueue<RequestBuilder> allFetchedDrawables;////must be corrected!
+    private ArrayBlockingQueue<Crypto> allFetchedCrypto;
+    private ArrayBlockingQueue<RequestBuilder> allFetchedDrawables;
     private boolean clearCache;
     private ArrayBlockingQueue<Candle> allCandles;
     private ArrayBlockingQueue<Boolean> success=new ArrayBlockingQueue<Boolean>(1);
@@ -81,14 +81,6 @@ public class ApiRequest{
     public void setClearCache(boolean clearCache) {
         this.clearCache = clearCache;
     }
-//
-//    public void setAllFetchedCrypto(ArrayBlockingQueue<Crypto> allFetchedCrypto) {
-//        this.allFetchedCrypto = allFetchedCrypto;
-//    }
-//
-//    public void setAllFetchedDrawables(ArrayBlockingQueue<RequestBuilder> allFetchedDrawables) {
-//        this.allFetchedDrawables = allFetchedDrawables;
-//    }
 
     public synchronized ArrayList<Object> fetchDataFromCoinMarket(int start, int limit) throws IOException, InterruptedException {
         while (this.done==false){
@@ -172,7 +164,6 @@ public class ApiRequest{
                String resp="";
                 try {
                     resp=response.body().string();
-                    //Log.i("responses", resp);
                     JSONObject jsonResponse=new JSONObject(resp);
                     JSONArray data=  jsonResponse.getJSONArray("data");
                     for(int i=0;i<data.length();i++){
@@ -182,7 +173,6 @@ public class ApiRequest{
                         JSONObject usd=quote.getJSONObject("USD");
                         String name= (String) model.get("name");
                         String symbol=(String) model.get("symbol");
-                        //Log.i("responses", symbol);
                         double price= Double.parseDouble(String.valueOf(usd.get("price")));
                         double percentage_change_1h=Double.parseDouble(String.valueOf(usd.get("percent_change_1h")));
                         double percentage_change_24h=Double.parseDouble (String.valueOf(usd.get("percent_change_24h")));
@@ -197,7 +187,6 @@ public class ApiRequest{
             @Override
             public void onFailure(Call call, IOException e) {
                 try {
-                    Log.i("main","failed!");
                     success.put(false);
                 } catch (InterruptedException interruptedException) {
                     interruptedException.printStackTrace();
@@ -249,7 +238,6 @@ public class ApiRequest{
                         JSONObject model=data.getJSONObject(tokenize[i]);
                         String logoUrl= (String) model.get("logo");
                         allFetchedDrawables.put(Glide.with(context).asBitmap().apply(myOptions).load(logoUrl).diskCacheStrategy(DiskCacheStrategy.RESOURCE));
-                        Log.i("logo Url:",logoUrl);
                     }
                     done=true;
                 } catch (IOException | JSONException | InterruptedException e) {
@@ -277,35 +265,24 @@ public class ApiRequest{
     }
 
     public synchronized void doGetRequestForCandles(String symbol, Range range) {
-        File httpCacheDirectory = new File(context.getCacheDir(), "http-cache");
-        int cacheSize = 10 * 1024 * 1024; // 10 MiB
-        Cache cache = new Cache(httpCacheDirectory, cacheSize);
         OkHttpClient httpClient= new OkHttpClient.Builder()
-                .addNetworkInterceptor(new CacheInterceptor(this.context))
-                .cache(cache)
                 .build();
-
         String miniUrl;
-        final String description;
 
         SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
         Date date = new Date();
-        //Log.i("datte::", String.valueOf(formatter.format(date)));
         switch (range) {
 
             case weekly:
                 miniUrl = "period_id=1DAY".concat("&time_end=".concat(formatter.format(date)).concat("&limit=7"));
-                description = "Daily candles from now";
                 break;
 
             case oneMonth:
                  miniUrl = "period_id=1DAY".concat("&time_end=".concat(formatter.format(date)).concat("&limit=30"));
-                description = "Daily candles from now";
                 break;
 
             default:
                 miniUrl = "";
-                description = "";
 
         }
 
@@ -331,7 +308,7 @@ public class ApiRequest{
                         double close=Double.parseDouble(String.valueOf(model.get("price_close")));
                         Candle candle=new Candle(symbol,open,close,high,low);
                         allCandles.put(candle);
-                       // Log.i("open::", String.valueOf(open));
+
                     }
                 } catch (IOException | JSONException | InterruptedException e) {
                     e.printStackTrace();
@@ -340,7 +317,6 @@ public class ApiRequest{
 
             @Override
             public void onFailure(Call call, IOException e) {
-                Log.v("TAG", e.getMessage());
             }
 
             @Override
