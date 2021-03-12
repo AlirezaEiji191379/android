@@ -3,4 +3,9 @@
     <string name="action_settings">Settings</string>
     <!-- Strings used for fragments for navigation -->
 
+    <string-array name="candlePopup">
+        <item>Latest Week</item>
+        <item>Latest Month</item>
+    </string-array>
+
 </resources>

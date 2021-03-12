@@ -1,29 +1,57 @@
 package com.sutporject.crypto;
 
 import android.content.Intent;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Point;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.ColorStateListDrawable;
+import android.graphics.drawable.Drawable;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
 
 import com.bumptech.glide.RequestBuilder;
+import com.github.mikephil.charting.charts.CandleStickChart;
+import com.github.mikephil.charting.components.Legend;
+import com.github.mikephil.charting.components.XAxis;
+import com.github.mikephil.charting.components.YAxis;
+import com.github.mikephil.charting.data.CandleData;
+import com.github.mikephil.charting.data.CandleDataSet;
+import com.github.mikephil.charting.data.CandleEntry;
 import com.sutporject.crypto.Controller.ApiRequest;
 import com.sutporject.crypto.Controller.CoinCandleController;
 import com.sutporject.crypto.Controller.CoinMarketController;
+import com.sutporject.crypto.model.Candle;
 import com.sutporject.crypto.model.Crypto;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+import androidx.viewpager.widget.ViewPager;
 
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.util.Log;
+import android.view.Display;
+import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.PopupWindow;
+import android.widget.RelativeLayout;
+import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
@@ -47,6 +75,15 @@ public class MainActivity extends AppCompatActivity {
     private ListView lView;
     private Adapter listAdapter;
     private SwipeRefreshLayout refreshLayout;
+    private boolean firstTime = true;
+    private ArrayList<String> allSymbols = new ArrayList<>();
+    private boolean loadMore = false;
+    private View popupView;
+    private PopupWindow popupWindow;
+    private boolean sevenCandle = true;
+    private boolean popupMessage = false;
+    private CandleStickChart chart;
+
 
     Handler handler=new Handler(Looper.getMainLooper()){
         @Override
@@ -60,43 +97,94 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(MainActivity.this,"please connect to internet for fetching more data",LENGTH_LONG).show();
                 return;
             }
-            ArrayList<Object> obj= (ArrayList<Object>) msg.obj;
-            ArrayList<Crypto> allCrypto= (ArrayList<Crypto>) obj.get(0);
-            ArrayList<RequestBuilder> allRbs= (ArrayList<RequestBuilder>) obj.get(1);
 
-            lView = (ListView) findViewById(R.id.list);
+            if(!popupMessage){
+                ArrayList<Object> obj= (ArrayList<Object>) msg.obj;
+                ArrayList<Crypto> allCrypto= (ArrayList<Crypto>) obj.get(0);
+                ArrayList<RequestBuilder> allRbs= (ArrayList<RequestBuilder>) obj.get(1);
 
-            ArrayList<String> symbols = new ArrayList<>();
-            ArrayList<String> names = new ArrayList<>();
-            ArrayList<String> prices = new ArrayList<>();
-            ArrayList<String> hour = new ArrayList<>();
-            ArrayList<String> day = new ArrayList<>();
-            ArrayList<String> week = new ArrayList<>();
-            ArrayList<RequestBuilder> icons = new ArrayList<>();
+                lView = (ListView) findViewById(R.id.list);
+
+                ArrayList<String> symbols = new ArrayList<>();
+                ArrayList<String> names = new ArrayList<>();
+                ArrayList<String> prices = new ArrayList<>();
+                ArrayList<String> hour = new ArrayList<>();
+                ArrayList<String> day = new ArrayList<>();
+                ArrayList<String> week = new ArrayList<>();
+                ArrayList<RequestBuilder> icons = new ArrayList<>();
 
 
-            for (int i = 0; i < allCrypto.size(); i++) {
-                Crypto crypto = allCrypto.get(i);
-                symbols.add(crypto.getSymbol());
-                names.add(crypto.getName());
-                prices.add(Double.toString(crypto.getPrice()));
-                hour.add(Double.toString(crypto.getChangesSinceLastHour()));
-                day.add(Double.toString(crypto.getChangesSinceLastDay()));
-                week.add(Double.toString(crypto.getChangesSinceLastWeek()));
-                icons.add(allRbs.get(i));
+                for (int i = 0; i < allCrypto.size(); i++) {
+                    Crypto crypto = allCrypto.get(i);
+                    symbols.add(crypto.getSymbol());
+                    names.add(crypto.getName());
+                    prices.add(Double.toString(crypto.getPrice()));
+                    hour.add(Double.toString(crypto.getChangesSinceLastHour()));
+                    day.add(Double.toString(crypto.getChangesSinceLastDay()));
+                    week.add(Double.toString(crypto.getChangesSinceLastWeek()));
+                    icons.add(allRbs.get(i));
+                }
+
+                if(listAdapter == null || refreshLayout.isRefreshing())
+                    listAdapter = new Adapter(MainActivity.this, symbols, names, icons,prices,hour,day,week);
+                else
+                    listAdapter.addItems(symbols, names, icons,prices,hour,day,week);
+
+                lView.setAdapter(listAdapter);
+
+                if(firstTime){
+                    allSymbols.addAll(symbols);
+                    firstTime = false;
+                }if(loadMore){
+                    allSymbols.addAll(symbols);
+                    loadMore = false;
+                }
+
+                findViewById(R.id.viewBtn).setEnabled(true);
+                if(refreshLayout.isRefreshing())
+                    Toast.makeText(getApplicationContext(),"Updated!", LENGTH_LONG).show();
+                refreshLayout.setRefreshing(false);
             }
 
-            if(listAdapter == null || refreshLayout.isRefreshing())
-                listAdapter = new Adapter(MainActivity.this, symbols, names, icons,prices,hour,day,week);
-            else
-                listAdapter.addItems(symbols, names, icons,prices,hour,day,week);
 
-            lView.setAdapter(listAdapter);
+            else {
+                ArrayList<Candle>allCandles= (ArrayList<Candle>) msg.obj;
 
-            findViewById(R.id.viewBtn).setEnabled(true);
-            if(refreshLayout.isRefreshing())
-                Toast.makeText(getApplicationContext(),"Updated!", LENGTH_LONG).show();
-            refreshLayout.setRefreshing(false);
+                chart = popupView.findViewById(R.id.candle_stick_chart);
+                ArrayList<CandleEntry> sticks = new ArrayList<>();
+                if(sevenCandle){
+                    for (int i = 0; i < 7; i++) {
+                        Candle candle = allCandles.get(i);
+                        sticks.add(new CandleEntry(i+1,(float)candle.getHigh(),(float)candle.getLow(),
+                                (float)candle.getOpen(),(float)candle.getClose()));
+                    }
+                }else{
+                    for (int i = 0; i < 30; i++) {
+                        Candle candle = allCandles.get(i);
+                        sticks.add(new CandleEntry(i+1,(float)candle.getHigh(),(float)candle.getLow(),
+                                (float)candle.getOpen(),(float)candle.getClose()));
+                    }
+                }
+
+                CandleDataSet set1 = new CandleDataSet(sticks, "DataSet 1");
+
+                set1.setColor(Color.rgb(80, 80, 80));
+                set1.setShadowColor(Color.DKGRAY);
+                set1.setShadowWidth(0.7f);
+                set1.setDecreasingColor(Color.RED);
+                set1.setDecreasingPaintStyle(Paint.Style.FILL);
+                set1.setIncreasingColor(Color.rgb(122, 242, 84));
+                set1.setIncreasingPaintStyle(Paint.Style.STROKE);
+                set1.setNeutralColor(Color.BLUE);
+                set1.setValueTextColor(Color.RED);
+                set1.setDrawValues(false);
+
+                CandleData data = new CandleData(set1);
+                chart.setData(data);
+                chart.invalidate();
+                popupMessage = false;
+            }
+
         }
     };
 
@@ -177,12 +265,87 @@ public class MainActivity extends AppCompatActivity {
         CoinMarketController cmc=new CoinMarketController(this,apiRequest,this.handler,this.starIndexOfCoins,this.limitOfCoins);
         cmc.setPriority(Integer.MAX_VALUE);
         this.executorService.execute(cmc);
+        loadMore = true;
+    }
+
+    private void showPopup(View view){
+        LayoutInflater popupInflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
+        popupView = popupInflater.inflate(R.layout.popupdiagram,null);
+        Display display = getWindowManager().getDefaultDisplay();
+        Point size = new Point();
+        display.getSize(size);
+        int width = size.x;
+        int height = size.y;
+
+        popupWindow = new PopupWindow(popupView,width-100,height-170,true);
+        popupWindow.setBackgroundDrawable(new ColorDrawable(Color.WHITE));
+        popupWindow.setElevation(70);
+        popupWindow.showAtLocation(view, Gravity.CENTER, 0, 0);
+        popupWindow.update(0, 0, popupWindow.getWidth(), popupWindow.getHeight());
     }
 
     public void nextPageClicked(View view){
-        Intent intent=new Intent(this,candleActivity.class);
-//        intent.putExtra("symbol","btc");
-        startActivity(intent);
+//        popupMessage = true;
+
+        lView = (ListView) findViewById(R.id.list);
+        int position = lView.getPositionForView(view);
+        String popupSymbol = allSymbols.get(position);
+
+        showPopup(view);
+
+        Spinner candleSpinner = (Spinner) popupView.findViewById(R.id.spinner);
+        ArrayAdapter<CharSequence> spinnerAdapter = ArrayAdapter.createFromResource(this,
+                R.array.candlePopup, android.R.layout.simple_spinner_item);
+        spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        candleSpinner.setAdapter(spinnerAdapter);
+
+        candleSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+                popupMessage = true;
+
+                Log.i("selected",Integer.toString(i));
+
+                if(i == 0)
+                    sevenCandle = true;
+                else
+                    sevenCandle = false;
+                apiRequest=new ApiRequest(handler,getApplicationContext());
+                executorService= Executors.newCachedThreadPool();
+                CoinCandleController c;
+                if(sevenCandle)
+                    c=new CoinCandleController(apiRequest,getApplicationContext(),handler,popupSymbol, ApiRequest.Range.weekly);
+               else
+                    c=new CoinCandleController(apiRequest,getApplicationContext(),handler,popupSymbol, ApiRequest.Range.oneMonth);
+                executorService.execute(c);
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> adapterView) {
+                popupMessage = false;
+
+            }
+        });
+
+        TextView popupText = (TextView) popupView.findViewById(R.id.popupSymbol);
+        popupText.setText(popupSymbol);
+
+//        apiRequest=new ApiRequest(this.handler,this);
+//        this.executorService= Executors.newCachedThreadPool();
+//        CoinCandleController c=new CoinCandleController(apiRequest,this,handler,popupSymbol, ApiRequest.Range.weekly);
+//        this.executorService.execute(c);
+
+
+//        allSymbols.get(position);
+//        TextView symbol = (TextView) findViewById(R.id.symbolTxt);
+
+//        Intent intent=new Intent(this,candleActivity.class);
+//        intent.putExtra("symbol",allSymbols.get(position));
+//        startActivity(intent);
+    }
+
+    public void closePopup(View view) {
+        popupWindow.dismiss();
     }
 
     @Override
@@ -221,5 +384,7 @@ public class MainActivity extends AppCompatActivity {
         Toast.makeText(this,status, LENGTH_LONG).show();
         return isConnected;
     }
+
+
 }
 
