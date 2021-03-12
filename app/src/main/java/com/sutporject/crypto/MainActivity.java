@@ -1,21 +1,15 @@
 package com.sutporject.crypto;
 
-import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.drawable.ColorDrawable;
-import android.graphics.drawable.ColorStateListDrawable;
-import android.graphics.drawable.Drawable;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
 
 import com.bumptech.glide.RequestBuilder;
 import com.github.mikephil.charting.charts.CandleStickChart;
-import com.github.mikephil.charting.components.Legend;
-import com.github.mikephil.charting.components.XAxis;
-import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.data.CandleData;
 import com.github.mikephil.charting.data.CandleDataSet;
 import com.github.mikephil.charting.data.CandleEntry;
@@ -29,8 +23,6 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
-import androidx.viewpager.widget.ViewPager;
-
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
@@ -41,26 +33,18 @@ import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
-import android.widget.ImageButton;
-import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.PopupWindow;
-import android.widget.RelativeLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.PriorityBlockingQueue;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -285,7 +269,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void nextPageClicked(View view){
-//        popupMessage = true;
 
         lView = (ListView) findViewById(R.id.list);
         int position = lView.getPositionForView(view);
@@ -303,8 +286,6 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
                 popupMessage = true;
-
-                Log.i("selected",Integer.toString(i));
 
                 if(i == 0)
                     sevenCandle = true;
@@ -330,18 +311,6 @@ public class MainActivity extends AppCompatActivity {
         TextView popupText = (TextView) popupView.findViewById(R.id.popupSymbol);
         popupText.setText(popupSymbol);
 
-//        apiRequest=new ApiRequest(this.handler,this);
-//        this.executorService= Executors.newCachedThreadPool();
-//        CoinCandleController c=new CoinCandleController(apiRequest,this,handler,popupSymbol, ApiRequest.Range.weekly);
-//        this.executorService.execute(c);
-
-
-//        allSymbols.get(position);
-//        TextView symbol = (TextView) findViewById(R.id.symbolTxt);
-
-//        Intent intent=new Intent(this,candleActivity.class);
-//        intent.putExtra("symbol",allSymbols.get(position));
-//        startActivity(intent);
     }
 
     public void closePopup(View view) {
