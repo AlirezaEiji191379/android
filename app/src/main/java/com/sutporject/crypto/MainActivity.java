@@ -40,6 +40,8 @@ import android.widget.PopupWindow;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import java.lang.ref.SoftReference;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.concurrent.ExecutorService;
@@ -76,9 +78,9 @@ public class MainActivity extends AppCompatActivity {
             if(msg.what==0){
                 starIndexOfCoins=starIndexOfCoins-limitOfCoins;
                 if(starIndexOfCoins<0) starIndexOfCoins=1;
-                executorService.shutdown();
                 findViewById(R.id.viewBtn).setEnabled(true);
                 Toast.makeText(MainActivity.this,"please connect to internet for fetching more data",LENGTH_LONG).show();
+                weakReference();
                 return;
             }
 
@@ -128,6 +130,7 @@ public class MainActivity extends AppCompatActivity {
                 if(refreshLayout.isRefreshing())
                     Toast.makeText(getApplicationContext(),"Updated!", LENGTH_LONG).show();
                 refreshLayout.setRefreshing(false);
+                weakReference();
             }
 
 
@@ -166,8 +169,8 @@ public class MainActivity extends AppCompatActivity {
                 chart.setData(data);
                 chart.invalidate();
                 popupMessage = false;
+                weakReference();
             }
-
         }
     };
 
@@ -183,7 +186,7 @@ public class MainActivity extends AppCompatActivity {
         CoinMarketController cmc=new CoinMarketController(this,apiRequest,this.handler,this.starIndexOfCoins,this.limitOfCoins);
         cmc.setPriority(Integer.MAX_VALUE);
         this.executorService.execute(cmc);
-
+        weakReference();
         refreshLayout = findViewById(R.id.swiperefresh);
         refreshLayout.setOnRefreshListener(
                 new SwipeRefreshLayout.OnRefreshListener() {
@@ -198,16 +201,21 @@ public class MainActivity extends AppCompatActivity {
                         if(starIndexOfCoins==1) numberOfThreads=1;
                         else numberOfThreads=(starIndexOfCoins+limitOfCoins-1)/limitOfCoins;
                         starIndexOfCoins=1;
-                        executorService= new ThreadPoolExecutor(1,1,0L, TimeUnit.SECONDS,new PriorityBlockingQueue<Runnable>(10, new Comparator<Runnable>() {
-                            @Override
-                            public int compare(Runnable t1, Runnable t2) {
-                                if(((CoinMarketController) t1).getPriority()>((CoinMarketController) t2).getPriority()) return -1;
-                                else if(((CoinMarketController) t1).getPriority()<((CoinMarketController) t2).getPriority()){return  1;}
-                                return 0;
-                            }
-                        }));
+                        if(executorService==null) {
+                            executorService = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.SECONDS, new PriorityBlockingQueue<Runnable>(10, new Comparator<Runnable>() {
+                                @Override
+                                public int compare(Runnable t1, Runnable t2) {
+                                    if (((CoinMarketController) t1).getPriority() > ((CoinMarketController) t2).getPriority())
+                                        return -1;
+                                    else if (((CoinMarketController) t1).getPriority() < ((CoinMarketController) t2).getPriority()) {
+                                        return 1;
+                                    }
+                                    return 0;
+                                }
+                            }));
+                        }
                         for(int i=0;i<numberOfThreads;i++){
-                            if(executorService.isTerminated()) executorService= new ThreadPoolExecutor(1,1,0L, TimeUnit.SECONDS,new PriorityBlockingQueue<Runnable>(10, new Comparator<Runnable>() {
+                            if(executorService.isTerminated() || executorService==null) executorService= new ThreadPoolExecutor(1,1,0L, TimeUnit.SECONDS,new PriorityBlockingQueue<Runnable>(10, new Comparator<Runnable>() {
                                 @Override
                                 public int compare(Runnable t1, Runnable t2) {
                                     if(((CoinMarketController) t1).getPriority()>((CoinMarketController) t2).getPriority()) return -1;
@@ -223,6 +231,7 @@ public class MainActivity extends AppCompatActivity {
                         findViewById(R.id.viewBtn).setEnabled(false);
                         starIndexOfCoins=starIndexOfCoins-limitOfCoins;
                         if(starIndexOfCoins<0) starIndexOfCoins=1;
+                        weakReference();
                     }
                 }
         );
@@ -238,14 +247,22 @@ public class MainActivity extends AppCompatActivity {
 
         if(view.isEnabled()==false) return;
         view.setEnabled(false);
-        if(this.executorService.isTerminated()) this.executorService=Executors.newCachedThreadPool();
+        if(this.executorService==null) this.executorService=Executors.newCachedThreadPool();
         this.starIndexOfCoins=this.starIndexOfCoins+this.limitOfCoins;
         CoinMarketController cmc=new CoinMarketController(this,apiRequest,this.handler,this.starIndexOfCoins,this.limitOfCoins);
         cmc.setPriority(Integer.MAX_VALUE);
         this.executorService.execute(cmc);
+        weakReference();
         loadMore = true;
     }
 
+    private void weakReference() {
+        if (this.executorService != null) {
+            this.executorService.shutdown();
+            SoftReference<ExecutorService> softReference = new SoftReference<ExecutorService>(this.executorService);
+            this.executorService = null;
+        }
+    }
     private void showPopup(View view){
         LayoutInflater popupInflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
         popupView = popupInflater.inflate(R.layout.popupdiagram,null);
@@ -289,13 +306,16 @@ public class MainActivity extends AppCompatActivity {
                 else
                     sevenCandle = false;
                 apiRequest=new ApiRequest(handler,getApplicationContext());
-                executorService= Executors.newCachedThreadPool();
+
+                //executorService= Executors.newCachedThreadPool();
+                if(executorService==null) executorService=Executors.newCachedThreadPool();
                 CoinCandleController c;
                 if(sevenCandle)
                     c=new CoinCandleController(apiRequest,getApplicationContext(),handler,popupSymbol, ApiRequest.Range.weekly);
                else
                     c=new CoinCandleController(apiRequest,getApplicationContext(),handler,popupSymbol, ApiRequest.Range.oneMonth);
                 executorService.execute(c);
+                weakReference();
             }
 
             @Override
